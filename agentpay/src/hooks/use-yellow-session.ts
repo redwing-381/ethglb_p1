@@ -2,11 +2,18 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { SessionState, SessionStatus, PaymentRecord, ActivityEvent } from '@/types';
-import { YellowClient, getYellowClient, formatUSDC } from '@/lib/yellow';
+import { 
+  YellowClient, 
+  getYellowClient, 
+  formatUSDC, 
+  ConnectionStatus,
+  SessionStatus as YellowSessionStatus,
+} from '@/lib/yellow';
 
 interface UseYellowSessionReturn {
   // State
   session: SessionState;
+  connectionStatus: ConnectionStatus;
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
@@ -30,8 +37,22 @@ const initialSessionState: SessionState = {
   createdAt: null,
 };
 
+// Map Yellow session status to our SessionStatus type
+function mapSessionStatus(status: YellowSessionStatus): SessionStatus {
+  switch (status) {
+    case 'none': return 'disconnected';
+    case 'creating': return 'creating';
+    case 'active': return 'active';
+    case 'closing': return 'closing';
+    case 'closed': return 'closed';
+    case 'error': return 'error';
+    default: return 'disconnected';
+  }
+}
+
 export function useYellowSession(): UseYellowSessionReturn {
   const [session, setSession] = useState<SessionState>(initialSessionState);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
@@ -42,10 +63,13 @@ export function useYellowSession(): UseYellowSessionReturn {
   useEffect(() => {
     const client = getYellowClient({
       onStatusChange: (status) => {
-        setSession(prev => ({ ...prev, status }));
+        setConnectionStatus(status);
       },
-      onMessage: (message) => {
-        console.log('Yellow message:', message);
+      onSessionStatusChange: (status) => {
+        setSession(prev => ({ ...prev, status: mapSessionStatus(status) }));
+      },
+      onBalanceUpdate: (balance) => {
+        setSession(prev => ({ ...prev, balance }));
       },
       onError: (err) => {
         setError(err.message);
@@ -76,7 +100,14 @@ export function useYellowSession(): UseYellowSessionReturn {
     setError(null);
 
     try {
-      const result = await client.createSession(budgetAmount);
+      // For now, use simplified channel creation
+      // Full implementation will include wallet signatures
+      const result = await client.createChannel({
+        amount: budgetAmount,
+        signState: async () => '0x' as `0x${string}`,
+        writeContract: async () => '0x' as `0x${string}`,
+        waitForTransaction: async () => {},
+      });
       
       setSession({
         channelId: result.channelId,
@@ -116,7 +147,14 @@ export function useYellowSession(): UseYellowSessionReturn {
     setError(null);
 
     try {
-      const result = await client.closeSession();
+      // For now, use simplified channel closure
+      // Full implementation will include wallet signatures
+      const result = await client.closeChannel({
+        fundsDestination: '0x0000000000000000000000000000000000000000' as `0x${string}`, // Will be replaced with actual wallet address
+        signState: async () => '0x' as `0x${string}`,
+        writeContract: async () => '0x' as `0x${string}`,
+        waitForTransaction: async () => {},
+      });
       
       // Add activity event
       addActivityEvent({
@@ -126,7 +164,7 @@ export function useYellowSession(): UseYellowSessionReturn {
         data: {
           taskId: session.channelId || '',
           totalCost: formatUSDC(
-            BigInt(session.payments.reduce((sum, p) => sum + parseFloat(p.amount), 0) * 1000000)
+            BigInt(Math.floor(session.payments.reduce((sum, p) => sum + parseFloat(p.amount), 0) * 1000000))
           ),
           agentsUsed: [...new Set(session.payments.map(p => p.to))],
         },
@@ -166,7 +204,8 @@ export function useYellowSession(): UseYellowSessionReturn {
 
   return {
     session,
-    isConnected: session.status === 'active',
+    connectionStatus,
+    isConnected: connectionStatus === 'connected' || connectionStatus === 'authenticated',
     isLoading,
     error,
     createSession,
