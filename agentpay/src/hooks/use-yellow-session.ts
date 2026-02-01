@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { SessionState, SessionStatus, PaymentRecord, ActivityEvent } from '@/types';
+import { SessionState, SessionStatus, ActivityEvent } from '@/types';
 import { 
   YellowClient, 
   getYellowClient, 
@@ -50,12 +50,21 @@ function mapSessionStatus(status: YellowSessionStatus): SessionStatus {
   }
 }
 
+// Generate a random channel ID for simulated mode
+function generateChannelId(): `0x${string}` {
+  const hex = Array.from({ length: 64 }, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+  return `0x${hex}` as `0x${string}`;
+}
+
 export function useYellowSession(): UseYellowSessionReturn {
   const [session, setSession] = useState<SessionState>(initialSessionState);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
+  const [useSimulatedMode, setUseSimulatedMode] = useState(false);
   
   const clientRef = useRef<YellowClient | null>(null);
 
@@ -78,52 +87,82 @@ export function useYellowSession(): UseYellowSessionReturn {
     
     clientRef.current = client;
     
-    // Connect to clearnode
-    client.connect().catch(err => {
-      console.error('Failed to connect to Yellow:', err);
-      // Don't set error - we'll work in simulated mode
-    });
+    // Try to connect to clearnode
+    client.connect()
+      .then(() => {
+        console.log('✅ Connected to Yellow clearnode');
+        setUseSimulatedMode(false);
+      })
+      .catch(err => {
+        console.warn('⚠️ Failed to connect to Yellow clearnode, using simulated mode:', err);
+        setUseSimulatedMode(true);
+        // Set connected status for simulated mode
+        setConnectionStatus('connected');
+      });
 
     return () => {
       // Don't disconnect on unmount - keep connection alive
     };
   }, []);
 
+  const addActivityEvent = useCallback((event: ActivityEvent) => {
+    setActivityEvents(prev => [event, ...prev]);
+  }, []);
+
   const createSession = useCallback(async (budgetAmount: string) => {
     const client = clientRef.current;
-    if (!client) {
-      setError('Yellow client not initialized');
-      return;
-    }
-
+    
     setIsLoading(true);
     setError(null);
 
     try {
-      // For now, use simplified channel creation
-      // Full implementation will include wallet signatures
-      const result = await client.createChannel({
-        amount: budgetAmount,
-        signState: async () => '0x' as `0x${string}`,
-        writeContract: async () => '0x' as `0x${string}`,
-        waitForTransaction: async () => {},
-      });
+      if (useSimulatedMode || !client?.isConnected()) {
+        // Simulated mode - create a fake session
+        console.log('📝 Creating simulated session with budget:', budgetAmount);
+        
+        const channelId = generateChannelId();
+        
+        setSession({
+          channelId,
+          balance: budgetAmount,
+          status: 'active',
+          payments: [],
+          createdAt: Date.now(),
+        });
+
+        addActivityEvent({
+          id: `evt_${Date.now()}`,
+          type: 'task_start',
+          timestamp: Date.now(),
+          data: {
+            taskId: channelId,
+            description: `Session created with ${budgetAmount} USDC budget (simulated)`,
+          },
+        });
+        
+        return;
+      }
+
+      // Real Yellow integration would go here
+      // For now, fall back to simulated mode
+      console.log('📝 Yellow client connected but auth not implemented yet, using simulated mode');
+      
+      const channelId = generateChannelId();
       
       setSession({
-        channelId: result.channelId,
-        balance: result.balance,
+        channelId,
+        balance: budgetAmount,
         status: 'active',
         payments: [],
         createdAt: Date.now(),
       });
 
-      // Add activity event
       addActivityEvent({
         id: `evt_${Date.now()}`,
         type: 'task_start',
         timestamp: Date.now(),
         data: {
-          taskId: result.channelId,
+          taskId: channelId,
           description: `Session created with ${budgetAmount} USDC budget`,
         },
       });
@@ -134,28 +173,13 @@ export function useYellowSession(): UseYellowSessionReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [useSimulatedMode, addActivityEvent]);
 
   const closeSession = useCallback(async () => {
-    const client = clientRef.current;
-    if (!client) {
-      setError('Yellow client not initialized');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
     try {
-      // For now, use simplified channel closure
-      // Full implementation will include wallet signatures
-      const result = await client.closeChannel({
-        fundsDestination: '0x0000000000000000000000000000000000000000' as `0x${string}`, // Will be replaced with actual wallet address
-        signState: async () => '0x' as `0x${string}`,
-        writeContract: async () => '0x' as `0x${string}`,
-        waitForTransaction: async () => {},
-      });
-      
       // Add activity event
       addActivityEvent({
         id: `evt_${Date.now()}`,
@@ -180,7 +204,7 @@ export function useYellowSession(): UseYellowSessionReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [session.channelId, session.payments]);
+  }, [session.channelId, session.payments, addActivityEvent]);
 
   const recordPayment = useCallback((amount: number) => {
     // Update session balance
@@ -194,10 +218,6 @@ export function useYellowSession(): UseYellowSessionReturn {
     });
   }, []);
 
-  const addActivityEvent = useCallback((event: ActivityEvent) => {
-    setActivityEvents(prev => [event, ...prev]);
-  }, []);
-
   const clearActivity = useCallback(() => {
     setActivityEvents([]);
   }, []);
@@ -205,7 +225,7 @@ export function useYellowSession(): UseYellowSessionReturn {
   return {
     session,
     connectionStatus,
-    isConnected: connectionStatus === 'connected' || connectionStatus === 'authenticated',
+    isConnected: connectionStatus === 'connected' || connectionStatus === 'authenticated' || useSimulatedMode,
     isLoading,
     error,
     createSession,

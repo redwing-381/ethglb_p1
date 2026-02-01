@@ -901,8 +901,11 @@ export class YellowClient {
       allocations: state.allocations,
     });
     
-    // Return as hex-encoded string (simplified for MVP)
-    return `0x${Buffer.from(stateString).toString('hex')}` as `0x${string}`;
+    // Return as hex-encoded string (browser-compatible)
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(stateString);
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `0x${hex}` as `0x${string}`;
   }
 
   /**
