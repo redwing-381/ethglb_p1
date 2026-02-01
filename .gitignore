@@ -1,0 +1,25 @@
+# Kiro folder
+.kiro/
+
+# Node modules
+node_modules/
+
+# Environment files
+.env*
+!.env.example
+
+# OS files
+.DS_Store
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Debug logs
+*.log
+
+# IDE
+.idea/
+.vscode/
