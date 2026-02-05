@@ -6,10 +6,14 @@ import { SessionManager } from '@/components/session-manager';
 import { TaskInput } from '@/components/task-input';
 import { ActivityFeed } from '@/components/activity-feed';
 import { ResultsPanel } from '@/components/results-panel';
+import { AgentCardsSection } from '@/components/agent-cards-section';
+import { ToastContainer } from '@/components/toast';
 import { useYellowSession } from '@/hooks/use-yellow-session';
+import { useToast } from '@/hooks/use-toast';
 import { getYellowClient, debugYellowClientState } from '@/lib/yellow';
 import { getAgentAddress } from '@/lib/yellow-config';
 import { AGENT_CONFIGS } from '@/lib/agents';
+import { getErrorMessage } from '@/lib/errors';
 import { 
   useAccount, 
   useSignTypedData, 
@@ -46,6 +50,8 @@ export default function Home() {
     addActivityEvent,
     recordPayment,
   } = useYellowSession();
+
+  const { toasts, showToast, dismissToast } = useToast();
 
   const [taskResult, setTaskResult] = useState<TaskResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -280,8 +286,11 @@ export default function Home() {
       });
 
       setTaskResult(data.result);
+      
+      // Show success toast
+      showToast('success', 'Task completed successfully!');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = getErrorMessage(err);
       setTaskError(errorMessage);
       addActivityEvent({
         id: `event-error-${Date.now()}`,
@@ -289,6 +298,9 @@ export default function Home() {
         timestamp: Date.now(),
         data: { message: errorMessage },
       });
+      
+      // Show error toast
+      showToast('error', errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -341,6 +353,9 @@ export default function Home() {
 
             {/* Right column - Task & Activity */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Agent Cards Section */}
+              <AgentCardsSection />
+              
               {/* Task Input */}
               <TaskInput
                 isSessionActive={session.status === 'active' && !isProcessing}
@@ -360,6 +375,9 @@ export default function Home() {
           </div>
         )}
       </div>
+      
+      {/* Toast Container - Fixed bottom-right */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </main>
   );
 }

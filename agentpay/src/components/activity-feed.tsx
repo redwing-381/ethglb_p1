@@ -4,33 +4,46 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ActivityEvent } from '@/types';
 import { useEnsName } from '@/hooks/use-ens-name';
 import { formatUSDC } from '@/lib/format';
+import { getDisplayName, getAgentInfo } from '@/lib/agent-registry';
+import { EnsBadge } from '@/components/ens-badge';
+import { EmptyState, InboxIcon } from '@/components/empty-state';
 
 interface ActivityFeedProps {
   events: ActivityEvent[];
   maxEvents?: number;
 }
 
-// Payment event component with ENS name resolution
+// Payment event component with ENS name resolution and agent names
 function PaymentEvent({ event }: { event: Extract<ActivityEvent, { type: 'payment' }> }) {
-  const { displayName: fromName } = useEnsName(event.data.from);
-  const { displayName: toName } = useEnsName(event.data.to);
+  const { ensName: fromEnsName } = useEnsName(event.data.from);
+  const { ensName: toEnsName } = useEnsName(event.data.to);
+  
+  // Get display names using priority: ENS > Agent name > Truncated address
+  const fromDisplayName = getDisplayName(event.data.from, fromEnsName);
+  const toDisplayName = getDisplayName(event.data.to, toEnsName);
+  
+  // Check if addresses are agents
+  const toAgent = getAgentInfo(event.data.to);
   
   return (
     <div className="flex items-center justify-between">
-      <span>
+      <span className="flex items-center gap-1">
         <span 
           className="text-gray-600 cursor-help" 
           title={event.data.from}
         >
-          {fromName}
+          {fromDisplayName}
         </span>
+        {fromEnsName && <EnsBadge />}
         <span className="mx-2">→</span>
         <span 
-          className="font-medium cursor-help" 
+          className="font-medium cursor-help flex items-center gap-1" 
           title={event.data.to}
         >
-          {toName}
+          {toAgent && <span>{toAgent.icon}</span>}
+          {toDisplayName}
         </span>
+        {toEnsName && <EnsBadge />}
       </span>
       <span className="text-green-600 font-medium">
         {formatUSDC(event.data.amount)}
@@ -139,9 +152,11 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 text-center py-4">
-            No activity yet
-          </p>
+          <EmptyState
+            icon={InboxIcon}
+            title="No activity yet"
+            description="Submit a task to see agent activity here"
+          />
         )}
       </CardContent>
     </Card>
