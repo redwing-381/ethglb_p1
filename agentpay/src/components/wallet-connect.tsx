@@ -1,6 +1,9 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useEnsName } from '@/hooks/use-ens-name';
+import { useEffect } from 'react';
+import { clearEnsCache } from '@/lib/ens';
 
 interface WalletConnectProps {
   onConnect?: (address: string) => void;
@@ -20,6 +23,16 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps) {
       }) => {
         const ready = mounted;
         const connected = ready && account && chain;
+        
+        // Use ENS name for connected account
+        const { displayName, ensName } = useEnsName(account?.address);
+        
+        // Clear ENS cache on disconnect
+        useEffect(() => {
+          if (!connected) {
+            clearEnsCache();
+          }
+        }, [connected]);
 
         // Call callbacks when connection state changes
         if (connected && onConnect) {
@@ -82,10 +95,18 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps) {
                   <button
                     onClick={openAccountModal}
                     className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    title={account.address}
                   >
-                    <span className="text-sm font-medium">
-                      {truncateAddress(account.address)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {displayName}
+                      </span>
+                      {ensName && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                          ENS
+                        </span>
+                      )}
+                    </div>
                   </button>
                 </div>
               );
@@ -95,9 +116,4 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps) {
       }}
     </ConnectButton.Custom>
   );
-}
-
-export function truncateAddress(address: string): string {
-  if (!address || address.length < 10) return address;
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }

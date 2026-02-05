@@ -2,10 +2,40 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ActivityEvent } from '@/types';
+import { useEnsName } from '@/hooks/use-ens-name';
 
 interface ActivityFeedProps {
   events: ActivityEvent[];
   maxEvents?: number;
+}
+
+// Payment event component with ENS name resolution
+function PaymentEvent({ event }: { event: Extract<ActivityEvent, { type: 'payment' }> }) {
+  const { displayName: fromName } = useEnsName(event.data.from);
+  const { displayName: toName } = useEnsName(event.data.to);
+  
+  return (
+    <div className="flex items-center justify-between">
+      <span>
+        <span 
+          className="text-gray-600 cursor-help" 
+          title={event.data.from}
+        >
+          {fromName}
+        </span>
+        <span className="mx-2">→</span>
+        <span 
+          className="font-medium cursor-help" 
+          title={event.data.to}
+        >
+          {toName}
+        </span>
+      </span>
+      <span className="text-green-600 font-medium">
+        {event.data.amount} {event.data.asset}
+      </span>
+    </div>
+  );
 }
 
 export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
@@ -37,18 +67,7 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
   const renderEventContent = (event: ActivityEvent) => {
     switch (event.type) {
       case 'payment':
-        return (
-          <div className="flex items-center justify-between">
-            <span>
-              <span className="text-gray-600">{event.data.from}</span>
-              <span className="mx-2">→</span>
-              <span className="font-medium">{event.data.to}</span>
-            </span>
-            <span className="text-green-600 font-medium">
-              {event.data.amount} {event.data.asset}
-            </span>
-          </div>
-        );
+        return <PaymentEvent event={event} />;
       case 'task_start':
         return (
           <span className="text-blue-600">
