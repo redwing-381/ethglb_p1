@@ -307,48 +307,46 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white text-xl font-bold">A</span>
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">⚡</span>
+              <h1 className="text-lg font-semibold text-gray-900">AgentPay</h1>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">AgentPay</h1>
-              <p className="text-xs text-gray-500">AI Agent Marketplace</p>
-            </div>
+            <WalletConnect />
           </div>
-          <WalletConnect />
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {!isWalletConnected ? (
-          <div className="text-center py-20 animate-fade-in">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <span className="text-white text-4xl">🤖</span>
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Welcome to AgentPay
+          <div className="max-w-2xl mx-auto text-center py-16">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+              AI Agent Marketplace
             </h2>
-            <p className="text-lg text-gray-600 mb-2">
-              AI agents paying each other instantly via Yellow Network
+            <p className="text-gray-600 mb-8">
+              Hire AI agents to complete tasks. They get paid instantly using Yellow Network's state channels.
             </p>
-            <p className="text-gray-500 mb-8">
-              Connect your wallet to get started
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg text-sm text-blue-700">
-              <span>💡</span>
-              <span>Powered by Yellow Network, LI.FI, and ENS</span>
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+              <p className="text-sm text-gray-500 mb-4">Connect your wallet to get started</p>
+              <WalletConnect />
+            </div>
+            <div className="flex items-center justify-center gap-6 text-xs text-gray-500">
+              <span>Powered by Yellow Network</span>
+              <span>•</span>
+              <span>LI.FI</span>
+              <span>•</span>
+              <span>ENS</span>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
-            {/* Left column - Session Manager */}
-            <div className="lg:col-span-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left column - Session & Agents */}
+            <div className="space-y-6">
               <SessionManager
                 session={session}
                 isLoading={isLoading}
@@ -364,34 +362,29 @@ export default function Home() {
                 currentChainId={chainId}
                 switchChain={switchChain}
               />
+              
+              <AgentCardsSection />
             </div>
 
             {/* Right column - Task & Activity */}
-            <div className="lg:col-span-8 space-y-6">
-              {/* Agent Cards Section */}
-              <AgentCardsSection />
-              
-              {/* Task Input */}
+            <div className="lg:col-span-2 space-y-6">
               <TaskInput
                 isSessionActive={session.status === 'active' && !isProcessing}
                 onSubmit={handleTaskSubmit}
               />
 
-              {/* Results Panel */}
               <ResultsPanel
                 result={taskResult}
                 isLoading={isProcessing}
                 error={taskError}
               />
 
-              {/* Activity Feed */}
               <ActivityFeed events={activityEvents} />
             </div>
           </div>
         )}
       </div>
       
-      {/* Toast Container - Fixed bottom-right */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </main>
   );
