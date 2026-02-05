@@ -135,48 +135,27 @@ export function useYellowSession(): UseYellowSessionReturn {
       
       console.log('✅ Authentication successful');
 
-      // Step 2: Query actual unified balance from Yellow clearnode
-      // Add a small delay to allow any recent faucet deposits to be processed
-      console.log('📡 Querying unified balance from Yellow (waiting 2s for faucet sync)...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Step 2: Create real on-chain payment channel
+      console.log('⛓️ Creating on-chain payment channel on Sepolia...');
+      const channelInfo = await client!.createChannel({
+        amount: budgetAmount,
+        currentChainId: walletFunctions.currentChainId,
+        switchChain: walletFunctions.switchChain,
+        signState: async (packedState) => {
+          return walletFunctions.signMessage({ message: packedState });
+        },
+        writeContract: walletFunctions.writeContract,
+        waitForTransaction: walletFunctions.waitForTransaction,
+      });
       
-      // Query the real balance from Yellow's ledger
-      const realBalance = await client!.queryBalance();
-      console.log('💰 Real unified balance:', realBalance, 'USDC');
-      
-      // Generate a session ID for tracking (off-chain only)
-      const sessionId = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}` as `0x${string}`;
-      
-      // Use the real balance from Yellow, or the requested budget if balance is higher
-      const availableBalance = parseFloat(realBalance);
-      const requestedBudget = parseFloat(budgetAmount);
-      
-      // If user has less than requested, use what they have
-      // If user has more, cap at requested budget
-      const effectiveBudget = availableBalance > 0 
-        ? Math.min(availableBalance, requestedBudget).toFixed(2)
-        : budgetAmount; // Fallback to requested if query failed
-      
-      // Set the balance on the Yellow client
-      client!.setUnifiedBalance(effectiveBudget);
-      client!.setMockChannelId(sessionId);
-      
-      console.log('✅ Session created (using unified balance mode)');
-      console.log('📋 Session ID:', sessionId);
-      console.log('💰 Available balance:', realBalance, 'USDC');
-      console.log('💰 Session budget:', effectiveBudget, 'USDC');
-      
-      // Warn if balance is low
-      if (availableBalance < requestedBudget && availableBalance > 0) {
-        console.warn(`⚠️ Requested ${budgetAmount} USDC but only ${realBalance} available`);
-      } else if (availableBalance === 0) {
-        console.warn('⚠️ No balance found - you may need to request tokens from the faucet');
-      }
+      console.log('✅ Payment channel created on-chain!');
+      console.log('📋 Channel ID:', channelInfo.channelId);
+      console.log('💰 Channel balance:', channelInfo.balance, 'USDC');
 
-      // Update session state - we're using off-chain unified balance
+      // Update session state with real channel
       setSession({
-        channelId: sessionId,
-        balance: effectiveBudget,
+        channelId: channelInfo.channelId,
+        balance: channelInfo.balance,
         status: 'active',
         payments: [],
         createdAt: Date.now(),
@@ -188,10 +167,8 @@ export function useYellowSession(): UseYellowSessionReturn {
         type: 'task_start',
         timestamp: Date.now(),
         data: {
-          taskId: sessionId,
-          description: availableBalance > 0 
-            ? `Session created with ${effectiveBudget} USDC budget (Yellow unified balance: ${realBalance} USDC)`
-            : `Session created with ${effectiveBudget} USDC budget - ⚠️ Request tokens from faucet first!`,
+          taskId: channelInfo.channelId,
+          description: `Payment channel created on Sepolia with ${channelInfo.balance} USDC`,
         },
       });
 

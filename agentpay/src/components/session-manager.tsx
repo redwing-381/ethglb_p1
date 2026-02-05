@@ -243,11 +243,11 @@ export function SessionManager({
                       onClick={handleCreateSession}
                       disabled={!canCreateSession || !budgetInput}
                     >
-                      {isLoading ? 'Creating...' : 'Create Session'}
+                      {isLoading ? 'Creating...' : 'Create Channel'}
                     </Button>
                   </div>
                   <p className="text-xs text-gray-500">
-                    This amount will be locked in a payment channel for agent tasks
+                    Creates an on-chain payment channel on Sepolia testnet
                   </p>
                 </div>
               </>
