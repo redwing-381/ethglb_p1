@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { SessionState } from '@/types';
 import type { WalletFunctions, CloseChannelWalletFunctions } from '@/types/wallet';
 import { requestFaucetTokens } from '@/lib/yellow-faucet';
+import { DepositFlow } from '@/components/deposit-flow';
 
 interface SessionManagerProps {
   session: SessionState;
@@ -44,6 +45,7 @@ export function SessionManager({
   const [budgetInput, setBudgetInput] = useState('5');
   const [faucetLoading, setFaucetLoading] = useState(false);
   const [faucetMessage, setFaucetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showDepositFlow, setShowDepositFlow] = useState(false);
 
   const handleRequestFaucet = async () => {
     if (!walletAddress) return;
@@ -73,6 +75,14 @@ export function SessionManager({
     } finally {
       setFaucetLoading(false);
     }
+  };
+
+  const handleDepositComplete = () => {
+    setShowDepositFlow(false);
+    setFaucetMessage({
+      type: 'success',
+      text: '✅ Bridge completed! Your funds should arrive shortly. You can now create a session.',
+    });
   };
 
   const handleCreateSession = async () => {
@@ -160,56 +170,87 @@ export function SessionManager({
         {!hasSession ? (
           // Create session form
           <div className="space-y-4">
-            {/* Faucet Section */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="text-sm font-medium text-blue-800">Need test tokens?</p>
-                  <p className="text-xs text-blue-600">Get free ytest.usd from Yellow&apos;s faucet</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRequestFaucet}
-                  disabled={!isWalletConnected || faucetLoading}
-                  className="bg-white"
-                >
-                  {faucetLoading ? 'Requesting...' : '🚰 Get Tokens'}
-                </Button>
-              </div>
-              {faucetMessage && (
-                <p className={`text-xs mt-2 ${faucetMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                  {faucetMessage.text}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Session Budget (USDC)
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={budgetInput}
-                  onChange={(e) => setBudgetInput(e.target.value)}
-                  placeholder="5.00"
-                  className="flex-1"
-                  disabled={isLoading}
+            {/* Show DepositFlow if enabled */}
+            {showDepositFlow ? (
+              <div className="space-y-4">
+                <DepositFlow
+                  onComplete={handleDepositComplete}
+                  onCancel={() => setShowDepositFlow(false)}
                 />
-                <Button 
-                  onClick={handleCreateSession}
-                  disabled={!canCreateSession || !budgetInput}
-                >
-                  {isLoading ? 'Creating...' : 'Create Session'}
-                </Button>
               </div>
-              <p className="text-xs text-gray-500">
-                This amount will be locked in a payment channel for agent tasks
-              </p>
-            </div>
+            ) : (
+              <>
+                {/* Faucet Section */}
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Need test tokens?</p>
+                      <p className="text-xs text-blue-600">Get free ytest.usd from Yellow&apos;s faucet</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRequestFaucet}
+                      disabled={!isWalletConnected || faucetLoading}
+                      className="bg-white"
+                    >
+                      {faucetLoading ? 'Requesting...' : '🚰 Get Tokens'}
+                    </Button>
+                  </div>
+                  {faucetMessage && (
+                    <p className={`text-xs mt-2 ${faucetMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                      {faucetMessage.text}
+                    </p>
+                  )}
+                </div>
+
+                {/* Cross-Chain Deposit Section */}
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-medium text-purple-800">Deposit from another chain</p>
+                      <p className="text-xs text-purple-600">Bridge USDC from Ethereum, Polygon, Arbitrum, etc.</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDepositFlow(true)}
+                      disabled={!isWalletConnected}
+                      className="bg-white"
+                    >
+                      🌉 Bridge
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Session Budget (USDC)
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={budgetInput}
+                      onChange={(e) => setBudgetInput(e.target.value)}
+                      placeholder="5.00"
+                      className="flex-1"
+                      disabled={isLoading}
+                    />
+                    <Button 
+                      onClick={handleCreateSession}
+                      disabled={!canCreateSession || !budgetInput}
+                    >
+                      {isLoading ? 'Creating...' : 'Create Session'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    This amount will be locked in a payment channel for agent tasks
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           // Active session display
