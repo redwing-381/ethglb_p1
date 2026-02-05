@@ -42,11 +42,11 @@ export function TaskInput({ isSessionActive, onSubmit }: TaskInputProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Submit Task</CardTitle>
+    <Card className="border-gray-200">
+      <CardHeader className="border-b border-gray-100">
+        <CardTitle className="text-lg text-gray-900">Submit Task</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         <Textarea
           placeholder={isSessionActive 
             ? "Describe what you want the agents to do..." 
@@ -59,23 +59,32 @@ export function TaskInput({ isSessionActive, onSubmit }: TaskInputProps) {
           }}
           disabled={!isSessionActive || isSubmitting}
           rows={4}
-          className="resize-none"
+          className="resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500"
         />
         
         {error && (
-          <p className="text-sm text-red-500">{error}</p>
+          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-red-600 text-sm">{error}</span>
+          </div>
         )}
 
         <Button
           onClick={handleSubmit}
           disabled={!isSessionActive || isSubmitting || !task.trim()}
-          className="w-full"
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-6 transition-smooth"
         >
-          {isSubmitting ? 'Processing...' : 'Submit to Agents'}
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+              Processing...
+            </span>
+          ) : (
+            'Submit to Agents'
+          )}
         </Button>
 
         {!isSessionActive && (
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-xs text-gray-500 text-center">
             Create a session to submit tasks
           </p>
         )}

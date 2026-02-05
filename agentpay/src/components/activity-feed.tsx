@@ -26,26 +26,28 @@ function PaymentEvent({ event }: { event: Extract<ActivityEvent, { type: 'paymen
   const toAgent = getAgentInfo(event.data.to);
   
   return (
-    <div className="flex items-center justify-between">
-      <span className="flex items-center gap-1">
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
         <span 
-          className="text-gray-600 cursor-help" 
+          className="text-gray-700 cursor-help font-medium truncate" 
           title={event.data.from}
         >
           {fromDisplayName}
         </span>
         {fromEnsName && <EnsBadge />}
-        <span className="mx-2">→</span>
-        <span 
-          className="font-medium cursor-help flex items-center gap-1" 
-          title={event.data.to}
-        >
-          {toAgent && <span>{toAgent.icon}</span>}
-          {toDisplayName}
-        </span>
-        {toEnsName && <EnsBadge />}
-      </span>
-      <span className="text-green-600 font-medium">
+        <span className="text-gray-400 flex-shrink-0">→</span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          {toAgent && <span className="flex-shrink-0">{toAgent.icon}</span>}
+          <span 
+            className="font-medium text-gray-900 cursor-help truncate" 
+            title={event.data.to}
+          >
+            {toDisplayName}
+          </span>
+          {toEnsName && <EnsBadge />}
+        </div>
+      </div>
+      <span className="text-green-600 font-semibold flex-shrink-0 text-sm">
         {formatUSDC(event.data.amount)}
       </span>
     </div>
@@ -56,13 +58,16 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
   const displayEvents = events.slice(0, maxEvents);
 
   const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString();
+    return new Date(timestamp).toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
 
   const getEventIcon = (type: ActivityEvent['type']) => {
     switch (type) {
       case 'payment':
-        return '💰';
+        return '💸';
       case 'task_start':
         return '🚀';
       case 'task_complete':
@@ -84,36 +89,36 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
         return <PaymentEvent event={event} />;
       case 'task_start':
         return (
-          <span className="text-blue-600">
-            Task started: {event.data.description.slice(0, 50)}
-            {event.data.description.length > 50 ? '...' : ''}
+          <span className="text-blue-700 font-medium">
+            Task started: <span className="font-normal text-gray-700">{event.data.description.slice(0, 50)}
+            {event.data.description.length > 50 ? '...' : ''}</span>
           </span>
         );
       case 'task_complete':
         return (
           <div className="flex items-center justify-between">
-            <span className="text-green-600">Task completed</span>
-            <span className="text-sm text-gray-500">
-              Total: {event.data.totalCost} USDC
+            <span className="text-green-700 font-medium">Task completed</span>
+            <span className="text-xs text-gray-500 font-medium">
+              {event.data.totalCost} USDC
             </span>
           </div>
         );
       case 'subtask_start':
         return (
-          <span className="text-gray-600">
-            {event.data.agentName} working on: {event.data.description.slice(0, 40)}...
+          <span className="text-gray-700">
+            <span className="font-medium">{event.data.agentName}</span> working on: {event.data.description.slice(0, 40)}...
           </span>
         );
       case 'subtask_complete':
         return (
-          <span className={event.data.success ? 'text-green-600' : 'text-red-600'}>
+          <span className={event.data.success ? 'text-green-700 font-medium' : 'text-red-700 font-medium'}>
             {event.data.agentName} {event.data.success ? 'completed' : 'failed'}
           </span>
         );
       case 'error':
         return (
-          <span className="text-red-600">
-            Error: {event.data.message}
+          <span className="text-red-700 font-medium">
+            Error: <span className="font-normal">{event.data.message}</span>
           </span>
         );
       default:
@@ -122,10 +127,10 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="border-gray-200">
+      <CardHeader className="pb-3 border-b border-gray-100">
         <CardTitle className="text-lg flex items-center justify-between">
-          <span>Activity Feed</span>
+          <span className="text-gray-900">Activity Feed</span>
           {events.length > 0 && (
             <span className="text-sm font-normal text-gray-500">
               {events.filter(e => e.type === 'payment').length} payments
@@ -133,17 +138,18 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         {displayEvents.length > 0 ? (
-          <div className="space-y-2 max-h-80 overflow-y-auto">
-            {displayEvents.map((event) => (
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {displayEvents.map((event, index) => (
               <div 
                 key={event.id}
-                className="p-2 bg-gray-50 rounded text-sm flex items-start gap-2"
+                className="p-3 bg-gradient-to-r from-gray-50 to-white rounded-lg text-sm flex items-start gap-3 border border-gray-100 animate-fade-in"
+                style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <span className="flex-shrink-0">{getEventIcon(event.type)}</span>
+                <span className="flex-shrink-0 text-lg">{getEventIcon(event.type)}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-gray-400 mb-0.5">
+                  <div className="text-xs text-gray-400 mb-1 font-medium">
                     {formatTime(event.timestamp)}
                   </div>
                   {renderEventContent(event)}

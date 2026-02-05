@@ -9,6 +9,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { useEnsName } from '@/hooks/use-ens-name';
+import { EnsBadge } from '@/components/ens-badge';
 
 interface AgentCardProps {
   name: string;
@@ -30,24 +31,22 @@ export function AgentCard({ name, address, description, icon = '🤖' }: AgentCa
   const { displayName, ensName } = useEnsName(address);
   
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="text-3xl flex-shrink-0">{icon}</div>
+    <Card className="card-hover border-gray-200 bg-white">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-gray-100">
+            <span className="text-3xl">{icon}</span>
+          </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-lg mb-1">{name}</h3>
-            <p 
-              className="text-sm text-gray-600 mb-2 cursor-help truncate" 
+            <h3 className="font-semibold text-base text-gray-900 mb-1">{name}</h3>
+            <div 
+              className="text-xs text-gray-500 mb-2 cursor-help flex items-center gap-2 flex-wrap" 
               title={address}
             >
-              {ensName || displayName}
-              {ensName && (
-                <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                  ENS
-                </span>
-              )}
-            </p>
-            <p className="text-sm text-gray-500">{description}</p>
+              <span className="truncate font-mono">{ensName || name}</span>
+              {ensName && <EnsBadge />}
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
           </div>
         </div>
       </CardContent>
