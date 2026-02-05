@@ -103,6 +103,7 @@ export interface PaymentEventData {
   to: string;
   amount: string;
   asset: string;
+  transactionId?: number;
 }
 
 export interface TaskStartData {

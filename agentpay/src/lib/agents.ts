@@ -1,5 +1,6 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
+import { AGENT_ADDRESSES } from './yellow-config';
 
 // Agent types
 export type AgentType = 'orchestrator' | 'researcher' | 'writer';
@@ -12,6 +13,7 @@ export interface AgentConfig {
   model: string;
   systemPrompt: string;
   maxTokens: number;
+  address: `0x${string}`;
 }
 
 // Agent result
@@ -42,6 +44,7 @@ export const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
     type: 'orchestrator',
     costPerTask: '0',
     model: 'openai/gpt-4o-mini',
+    address: AGENT_ADDRESSES.ORCHESTRATOR,
     systemPrompt: `You are a task orchestrator for an AI agent marketplace. Analyze the user's task and break it down into sub-tasks.
 
 IMPORTANT: Return ONLY a valid JSON object with this exact structure:
@@ -65,6 +68,7 @@ Rules:
     type: 'researcher',
     costPerTask: '0.02',
     model: 'openai/gpt-4o-mini',
+    address: AGENT_ADDRESSES.RESEARCHER,
     systemPrompt: `You are a research specialist in an AI agent marketplace. Your job is to gather and synthesize information on the given topic.
 
 Provide factual, well-organized research findings. Be thorough but concise.
@@ -76,6 +80,7 @@ Format your response with clear sections and bullet points where appropriate.`,
     type: 'writer',
     costPerTask: '0.02',
     model: 'openai/gpt-4o-mini',
+    address: AGENT_ADDRESSES.WRITER,
     systemPrompt: `You are a content writer in an AI agent marketplace. Create clear, engaging content based on the provided information.
 
 Format your output with proper structure and readability.

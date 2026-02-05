@@ -10,6 +10,7 @@ import {
   privateKeyToAccount,
   type PrivateKeyAccount,
 } from 'viem/accounts';
+import { toHex, keccak256 } from 'viem';
 import { SESSION_EXPIRY } from './yellow-config';
 
 /**
@@ -139,14 +140,18 @@ export class SessionKeyManager {
   /**
    * Sign an RPC request using the session key
    * 
-   * Signs the JSON-stringified request payload using the session key.
-   * This is used for authenticating off-chain RPC requests to the clearnode.
+   * Signs the request payload using raw ECDSA (no EIP-191 prefix).
+   * This matches the Yellow SDK's createECDSAMessageSigner approach:
+   * 1. JSON.stringify the payload (req array)
+   * 2. Convert to hex using toHex()
+   * 3. Hash with keccak256
+   * 4. Sign the hash directly (raw ECDSA)
    * 
    * @param request - The RPC request to sign
-   * @returns The signature as a hex string
+   * @returns The signature as a hex string (65 bytes: r + s + v)
    */
   async signRequest(request: RPCRequest): Promise<`0x${string}`> {
-    if (!this.account) {
+    if (!this.account || !this.sessionKey) {
       throw new Error('No session key available. Call generateSessionKey() first.');
     }
     
@@ -156,9 +161,19 @@ export class SessionKeyManager {
       throw new Error('Session key has expired. Please re-authenticate.');
     }
     
-    // Sign the stringified request
-    const message = JSON.stringify(request.req);
-    return this.account.signMessage({ message });
+    // Match Yellow SDK's createECDSAMessageSigner approach:
+    // 1. JSON.stringify the payload with bigint handling
+    // 2. Convert to hex
+    // 3. keccak256 hash
+    // 4. Raw ECDSA sign (no EIP-191 prefix)
+    const jsonPayload = JSON.stringify(request.req, (_, v) => 
+      typeof v === 'bigint' ? v.toString() : v
+    );
+    const hexMessage = toHex(jsonPayload);
+    const hash = keccak256(hexMessage);
+    
+    // Use account.sign({ hash }) for raw ECDSA signing (no prefix)
+    return this.account.sign({ hash });
   }
 
   /**
