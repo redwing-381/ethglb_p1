@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ActivityEvent } from '@/types';
 import { useEnsName } from '@/hooks/use-ens-name';
+import { formatUSDC } from '@/lib/format';
 
 interface ActivityFeedProps {
   events: ActivityEvent[];
@@ -32,7 +33,7 @@ function PaymentEvent({ event }: { event: Extract<ActivityEvent, { type: 'paymen
         </span>
       </span>
       <span className="text-green-600 font-medium">
-        {event.data.amount} {event.data.asset}
+        {formatUSDC(event.data.amount)}
       </span>
     </div>
   );

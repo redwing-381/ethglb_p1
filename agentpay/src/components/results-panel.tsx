@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatUSDC } from '@/lib/format';
 
 interface TaskResult {
   content: string;
@@ -55,7 +56,7 @@ export function ResultsPanel({ result, isLoading, error }: ResultsPanelProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Result</CardTitle>
           <div className="text-sm text-gray-500">
-            Cost: <span className="font-medium text-green-600">{result.totalCost} USDC</span>
+            Cost: <span className="font-medium text-green-600">{formatUSDC(result.totalCost)}</span>
             {' • '}
             {result.subTaskCount} sub-tasks
           </div>

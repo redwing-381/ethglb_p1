@@ -8,6 +8,7 @@ import { SessionState } from '@/types';
 import type { WalletFunctions, CloseChannelWalletFunctions } from '@/types/wallet';
 import { requestFaucetTokens } from '@/lib/yellow-faucet';
 import { DepositFlow } from '@/components/deposit-flow';
+import { formatUSDC, formatAmount } from '@/lib/format';
 
 interface SessionManagerProps {
   session: SessionState;
@@ -260,7 +261,7 @@ export function SessionManager({
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Session Balance</span>
                 <span className="text-lg font-semibold">
-                  {parseFloat(session.balance).toFixed(2)} USDC
+                  {formatUSDC(session.balance)}
                 </span>
               </div>
               
