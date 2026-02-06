@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatUSDC } from '@/lib/format';
+import { formatUSDC } from '@/lib/utils';
 
 interface TaskResult {
   content: string;

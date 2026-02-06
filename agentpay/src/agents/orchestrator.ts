@@ -1,4 +1,4 @@
-import { executeAgent, parseOrchestratorPlan, type OrchestratorPlan } from '@/lib/agents';
+import { executeAgent, parseOrchestratorPlan, type OrchestratorPlan } from '@/lib/ai';
 
 export async function planTask(task: string): Promise<OrchestratorPlan> {
   const result = await executeAgent('orchestrator', task);

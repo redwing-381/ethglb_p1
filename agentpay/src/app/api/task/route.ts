@@ -2,15 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { planTask } from '@/agents/orchestrator';
 import { research } from '@/agents/researcher';
 import { write } from '@/agents/writer';
-import { AGENT_CONFIGS, type AgentType } from '@/lib/agents';
-import { getAgentAddress } from '@/lib/yellow-config';
+import { AGENT_CONFIGS, type AgentType } from '@/lib/ai';
+import { getAgentAddress } from '@/lib/yellow';
 import type { ActivityEvent, PaymentRecord } from '@/types';
-import { 
-  getPlatformWalletManager, 
-  getAgentWallet,
-  type AgentType as WalletAgentType 
-} from '@/lib/agent-wallet-manager';
-import { getAgentTransferService } from '@/lib/agent-transfer-service';
 
 interface TaskRequest {
   task: string;
@@ -27,84 +21,12 @@ interface SubTaskResult {
 }
 
 /**
- * Check if agent wallets feature is enabled
- */
-function isAgentWalletsEnabled(): boolean {
-  return process.env.ENABLE_AGENT_WALLETS === 'true';
-}
-
-/**
- * Execute a real Yellow transfer to an agent address.
+ * Execute a payment to an agent.
  * 
- * If agent wallets are enabled, uses agent-to-agent transfers.
- * Otherwise, falls back to platform-controlled model.
+ * In the current model, payments are tracked server-side but the actual
+ * Yellow transfers happen on the client side where the wallet is connected.
  */
-async function executeAgentPayment(
-  agentType: 'orchestrator' | 'researcher' | 'writer',
-  amount: string
-): Promise<{ success: boolean; transactionId?: number; error?: string }> {
-  // Check if agent wallets feature is enabled
-  if (isAgentWalletsEnabled()) {
-    try {
-      // Use agent wallet manager for direct agent-to-agent transfers
-      const walletManager = getPlatformWalletManager();
-      
-      if (!walletManager.isInitialized()) {
-        console.warn('⚠️ Agent wallet manager not initialized, falling back to platform model');
-        return executePlatformPayment(agentType, amount);
-      }
-      
-      // Get orchestrator wallet (pays other agents)
-      const orchestratorWallet = getAgentWallet('orchestrator');
-      const targetWallet = getAgentWallet(agentType as WalletAgentType);
-      
-      // If paying orchestrator itself, skip transfer
-      if (agentType === 'orchestrator') {
-        console.log(`📋 Orchestrator self-payment skipped: ${amount} USDC`);
-        return { success: true, transactionId: Date.now() };
-      }
-      
-      // Execute direct agent-to-agent transfer
-      const transferService = getAgentTransferService();
-      const result = await transferService.transferBetweenAgents(
-        orchestratorWallet,
-        targetWallet,
-        amount,
-        `Payment for ${agentType} work`
-      );
-      
-      if (result.success) {
-        console.log(`✅ Agent transfer complete: ${agentType} received ${amount} USDC (TX: ${result.transactionId})`);
-        return {
-          success: true,
-          transactionId: typeof result.transactionId === 'number' 
-            ? result.transactionId 
-            : parseInt(String(result.transactionId), 10),
-        };
-      } else {
-        console.error(`❌ Agent transfer failed: ${result.error}`);
-        return {
-          success: false,
-          error: result.error,
-        };
-      }
-    } catch (error) {
-      console.error('❌ Agent wallet payment error:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Agent payment failed',
-      };
-    }
-  } else {
-    // Fall back to platform-controlled model
-    return executePlatformPayment(agentType, amount);
-  }
-}
-
-/**
- * Platform-controlled payment model (fallback)
- */
-function executePlatformPayment(
+function executeAgentPayment(
   agentType: 'orchestrator' | 'researcher' | 'writer',
   amount: string
 ): { success: boolean; transactionId?: number; error?: string } {
@@ -134,28 +56,6 @@ export async function POST(request: NextRequest) {
         { error: 'Channel ID is required' },
         { status: 400 }
       );
-    }
-
-    // Initialize agent wallets if enabled
-    if (isAgentWalletsEnabled()) {
-      try {
-        const walletManager = getPlatformWalletManager();
-        
-        if (!walletManager.isInitialized()) {
-          console.log('🤖 Initializing agent wallet manager...');
-          await walletManager.initialize();
-          
-          // Initialize Yellow clients for agents
-          console.log('🔌 Initializing Yellow clients for agents...');
-          await walletManager.initializeYellowClients();
-          
-          console.log('✅ Agent wallets ready');
-        }
-      } catch (error) {
-        console.error('❌ Failed to initialize agent wallets:', error);
-        console.log('⚠️ Falling back to platform-controlled model');
-        // Continue with platform-controlled model
-      }
     }
 
     // Step 1: Plan the task with orchestrator
@@ -288,7 +188,6 @@ export async function POST(request: NextRequest) {
     const agentsUsed = [...new Set(results.map(r => AGENT_CONFIGS[r.agentType].name))];
 
     console.log(`✅ Task complete. Total cost: ${totalCost.toFixed(2)} USDC`);
-    console.log(`💰 Payment model: ${isAgentWalletsEnabled() ? 'Agent-Owned Wallets' : 'Platform-Controlled'}`);
 
     return NextResponse.json({
       status: 'complete',
@@ -300,7 +199,6 @@ export async function POST(request: NextRequest) {
       },
       payments,
       events,
-      paymentModel: isAgentWalletsEnabled() ? 'agent-wallets' : 'platform-controlled',
     });
 
   } catch (error) {

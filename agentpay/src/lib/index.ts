@@ -1,0 +1,22 @@
+/**
+ * AgentPay Library
+ * 
+ * Main entry point for all library exports.
+ * Organized into logical modules:
+ * - yellow: Yellow Network integration
+ * - blockchain: Wallet and chain utilities
+ * - ai: Agent execution and registry
+ * - utils: General utilities
+ * 
+ * Note: Import from specific modules to avoid naming conflicts:
+ * - import { ... } from '@/lib/yellow'
+ * - import { ... } from '@/lib/blockchain'
+ * - import { ... } from '@/lib/ai'
+ * - import { ... } from '@/lib/utils'
+ */
+
+// Re-export modules as namespaces to avoid conflicts
+export * as yellow from './yellow';
+export * as blockchain from './blockchain';
+export * as ai from './ai';
+export * as utils from './utils';

@@ -1,6 +1,13 @@
+/**
+ * AI Agent Execution
+ * 
+ * Provides agent execution logic using OpenRouter for AI model access.
+ * Includes orchestrator for task breakdown and specialized agents for execution.
+ */
+
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
-import { AGENT_ADDRESSES } from './yellow-config';
+import { AGENT_ADDRESSES } from '../yellow/config';
 
 // Agent types
 export type AgentType = 'orchestrator' | 'researcher' | 'writer';
@@ -89,7 +96,9 @@ Use headings, paragraphs, and lists as appropriate for the content type.`,
   },
 };
 
-// Create OpenRouter client
+/**
+ * Create OpenRouter client for AI model access
+ */
 export function createOpenRouterClient() {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -98,7 +107,14 @@ export function createOpenRouterClient() {
   return createOpenRouter({ apiKey });
 }
 
-// Execute an agent with a task
+/**
+ * Execute an agent with a task
+ * 
+ * @param agentType - Type of agent to execute
+ * @param task - Task description
+ * @param context - Optional context from previous work
+ * @returns Agent execution result
+ */
 export async function executeAgent(
   agentType: AgentType,
   task: string,
@@ -134,7 +150,12 @@ export async function executeAgent(
   }
 }
 
-// Parse orchestrator response into sub-tasks
+/**
+ * Parse orchestrator response into sub-tasks
+ * 
+ * @param response - Raw orchestrator response
+ * @returns Parsed orchestrator plan with sub-tasks
+ */
 export function parseOrchestratorPlan(response: string): OrchestratorPlan {
   try {
     // Try to extract JSON from the response

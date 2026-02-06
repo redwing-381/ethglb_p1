@@ -11,9 +11,9 @@ import { ToastContainer } from '@/components/toast';
 import { useYellowSession } from '@/hooks/use-yellow-session';
 import { useToast } from '@/hooks/use-toast';
 import { getYellowClient, debugYellowClientState } from '@/lib/yellow';
-import { getAgentAddress } from '@/lib/yellow-config';
-import { AGENT_CONFIGS } from '@/lib/agents';
-import { getErrorMessage } from '@/lib/errors';
+import { getAgentAddress } from '@/lib/yellow';
+import { AGENT_CONFIGS } from '@/lib/ai';
+import { getErrorMessage } from '@/lib/utils';
 import { 
   useAccount, 
   useSignTypedData, 
@@ -22,6 +22,8 @@ import {
   useSignMessage,
   useSwitchChain,
   useChainId,
+  useReadContract,
+  useWalletClient,
 } from 'wagmi';
 import type { ActivityEvent } from '@/types';
 
@@ -39,11 +41,14 @@ export default function Home() {
   const { signTypedDataAsync } = useSignTypedData();
   const { writeContractAsync } = useWriteContract();
   const { signMessageAsync } = useSignMessage();
+  const { data: walletClient } = useWalletClient();
   
   const {
     session,
     isLoading,
     error,
+    approvalStatus,
+    lifecycleStatus,
     createSession,
     closeSession,
     activityEvents,
@@ -84,8 +89,9 @@ export default function Home() {
     functionName: string;
     args: unknown[];
     value?: bigint;
+    gas?: bigint;
   }): Promise<`0x${string}`> => {
-    // Build the config object, only including value if it's defined
+    // Build the config object, only including value/gas if defined
     const config = {
       address: params.address,
       abi: params.abi,
@@ -94,7 +100,14 @@ export default function Home() {
     } as Parameters<typeof writeContractAsync>[0];
     
     if (params.value !== undefined) {
-      (config as { value?: bigint }).value = params.value;
+      (config as Record<string, unknown>).value = params.value;
+    }
+    
+    // CRITICAL: Pass gas limit to avoid wagmi's auto-estimation
+    // which can exceed Sepolia's block gas limit
+    if (params.gas !== undefined) {
+      (config as Record<string, unknown>).gas = params.gas;
+      console.log('⛽ Using explicit gas limit:', params.gas.toString());
     }
     
     const hash = await writeContractAsync(config);
@@ -143,6 +156,32 @@ export default function Home() {
   const switchChain = useCallback(async (targetChainId: number): Promise<void> => {
     await switchChainAsync({ chainId: targetChainId });
   }, [switchChainAsync]);
+
+  const readContract = useCallback(async <T,>(params: {
+    address: `0x${string}`;
+    abi: readonly unknown[];
+    functionName: string;
+    args?: unknown[];
+  }): Promise<T> => {
+    // Use viem's readContract directly
+    const { readContract: viemReadContract } = await import('viem/actions');
+    const { createPublicClient, http } = await import('viem');
+    const { sepolia } = await import('viem/chains');
+    
+    const publicClient = createPublicClient({
+      chain: sepolia,
+      transport: http(),
+    });
+    
+    const result = await viemReadContract(publicClient, {
+      address: params.address,
+      abi: params.abi,
+      functionName: params.functionName,
+      args: params.args,
+    });
+    
+    return result as T;
+  }, []);
 
   const handleTaskSubmit = async (task: string) => {
     if (!session.channelId) return;
@@ -351,6 +390,8 @@ export default function Home() {
                 session={session}
                 isLoading={isLoading}
                 error={error}
+                approvalStatus={approvalStatus}
+                lifecycleStatus={lifecycleStatus}
                 onCreateSession={createSession}
                 onCloseSession={closeSession}
                 walletAddress={walletAddress}
@@ -359,8 +400,10 @@ export default function Home() {
                 writeContract={writeContract}
                 waitForTransaction={waitForTransaction}
                 signMessage={signMessage}
+                readContract={readContract}
                 currentChainId={chainId}
                 switchChain={switchChain}
+                walletClient={walletClient}
               />
               
               <AgentCardsSection />

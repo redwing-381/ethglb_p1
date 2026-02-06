@@ -11,7 +11,7 @@ import {
   getCachedForwardResolution, 
   setCachedForwardResolution,
   isValidEnsName 
-} from '@/lib/ens';
+} from '@/lib/blockchain';
 import { useEffect, useState } from 'react';
 import { isAddress } from 'viem';
 

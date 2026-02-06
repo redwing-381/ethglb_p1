@@ -3,7 +3,7 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useEnsName } from '@/hooks/use-ens-name';
 import { useEffect } from 'react';
-import { clearEnsCache } from '@/lib/ens';
+import { clearEnsCache } from '@/lib/blockchain';
 
 interface WalletConnectProps {
   onConnect?: (address: string) => void;

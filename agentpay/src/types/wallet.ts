@@ -26,6 +26,7 @@ export type WriteContractFn = (params: {
   functionName: string;
   args: unknown[];
   value?: bigint;
+  gas?: bigint;
 }) => Promise<`0x${string}`>;
 
 /**
@@ -49,6 +50,17 @@ export type SignMessageFn = (params: {
 export type SwitchChainFn = (chainId: number) => Promise<void>;
 
 /**
+ * Function type for reading from smart contracts.
+ * Used for checking token balance and allowance.
+ */
+export type ReadContractFn = <T>(params: {
+  address: `0x${string}`;
+  abi: readonly unknown[];
+  functionName: string;
+  args?: unknown[];
+}) => Promise<T>;
+
+/**
  * Combined wallet functions passed to Yellow client operations.
  * These are extracted from wagmi hooks and passed to session operations.
  */
@@ -57,11 +69,14 @@ export interface WalletFunctions {
   writeContract: WriteContractFn;
   waitForTransaction: WaitForTransactionFn;
   signMessage: SignMessageFn;
+  readContract: ReadContractFn;
   walletAddress: `0x${string}`;
   /** Current chain ID the wallet is connected to */
   currentChainId?: number;
   /** Function to switch chains if needed */
   switchChain?: SwitchChainFn;
+  /** Viem wallet client for Nitrolite SDK (optional - for on-chain channel mode) */
+  walletClient?: unknown;
 }
 
 /**

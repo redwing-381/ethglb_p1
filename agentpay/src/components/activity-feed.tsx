@@ -3,8 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ActivityEvent } from '@/types';
 import { useEnsName } from '@/hooks/use-ens-name';
-import { formatUSDC } from '@/lib/format';
-import { getDisplayName, getAgentInfo } from '@/lib/agent-registry';
+import { formatUSDC } from '@/lib/utils';
+import { getDisplayName, getAgentInfo } from '@/lib/ai';
 
 interface ActivityFeedProps {
   events: ActivityEvent[];

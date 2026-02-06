@@ -6,14 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SessionState } from '@/types';
 import type { WalletFunctions, CloseChannelWalletFunctions } from '@/types/wallet';
-import { requestFaucetTokens } from '@/lib/yellow-faucet';
+import type { ApprovalStatus, ChannelLifecycleStatus } from '@/hooks/use-yellow-session';
+import { requestFaucetTokens } from '@/lib/yellow';
 import { DepositFlow } from '@/components/deposit-flow';
-import { formatUSDC, formatAmount } from '@/lib/format';
+import { formatUSDC } from '@/lib/utils';
 
 interface SessionManagerProps {
   session: SessionState;
   isLoading: boolean;
   error: string | null;
+  approvalStatus: ApprovalStatus;
+  lifecycleStatus?: ChannelLifecycleStatus;
   onCreateSession: (budgetAmount: string, walletFunctions: WalletFunctions) => Promise<void>;
   onCloseSession: (walletFunctions: CloseChannelWalletFunctions) => Promise<void>;
   
@@ -24,14 +27,18 @@ interface SessionManagerProps {
   writeContract: WalletFunctions['writeContract'];
   waitForTransaction: WalletFunctions['waitForTransaction'];
   signMessage: WalletFunctions['signMessage'];
+  readContract: WalletFunctions['readContract'];
   currentChainId?: number;
   switchChain?: (chainId: number) => Promise<void>;
+  walletClient?: unknown;
 }
 
 export function SessionManager({
   session,
   isLoading,
   error,
+  approvalStatus,
+  lifecycleStatus,
   onCreateSession,
   onCloseSession,
   walletAddress,
@@ -40,8 +47,10 @@ export function SessionManager({
   writeContract,
   waitForTransaction,
   signMessage,
+  readContract,
   currentChainId,
   switchChain,
+  walletClient,
 }: SessionManagerProps) {
   const [budgetInput, setBudgetInput] = useState('5');
   const [faucetLoading, setFaucetLoading] = useState(false);
@@ -100,9 +109,11 @@ export function SessionManager({
       writeContract,
       waitForTransaction,
       signMessage,
+      readContract,
       walletAddress,
       currentChainId,
       switchChain,
+      walletClient,
     };
 
     await onCreateSession(budgetInput, walletFunctions);
@@ -149,7 +160,9 @@ export function SessionManager({
         </CardTitle>
         <CardDescription>
           {isActive 
-            ? 'Session active - agents can execute tasks'
+            ? session.channelId?.startsWith('unified-')
+              ? 'Gasless mode active - instant transfers via Yellow Network'
+              : 'Session active - agents can execute tasks'
             : hasSession
             ? 'Session closed'
             : 'Create a session to start using agents'}
@@ -159,6 +172,188 @@ export function SessionManager({
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             {error}
+          </div>
+        )}
+
+        {/* Approval Status Display */}
+        {isLoading && approvalStatus.state !== 'idle' && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-blue-900">
+                {approvalStatus.state === 'checking_balance' && '🔍 Checking token balance...'}
+                {approvalStatus.state === 'checking_allowance' && '🔍 Checking token approval...'}
+                {approvalStatus.state === 'approval_needed' && '📝 Approval required'}
+                {approvalStatus.state === 'approving' && '⏳ Approving tokens...'}
+                {approvalStatus.state === 'approval_confirmed' && '✅ Tokens approved'}
+                {approvalStatus.state === 'creating_channel' && '⛓️ Creating payment channel...'}
+                {approvalStatus.state === 'channel_created' && '✅ Channel created'}
+              </span>
+            </div>
+
+            {/* Show balance and allowance info */}
+            {approvalStatus.currentBalance !== undefined && (
+              <div className="text-xs text-blue-700 space-y-1">
+                <div>Balance: {(Number(approvalStatus.currentBalance) / 1_000_000).toFixed(2)} USDC</div>
+                {approvalStatus.currentAllowance !== undefined && (
+                  <div>Current Allowance: {(Number(approvalStatus.currentAllowance) / 1_000_000).toFixed(2)} USDC</div>
+                )}
+                {approvalStatus.requiredAmount !== undefined && (
+                  <div>Required: {(Number(approvalStatus.requiredAmount) / 1_000_000).toFixed(2)} USDC</div>
+                )}
+              </div>
+            )}
+
+            {/* Show transaction hashes */}
+            {approvalStatus.approvalTxHash && (
+              <div className="text-xs text-blue-600">
+                <a 
+                  href={`https://sepolia.etherscan.io/tx/${approvalStatus.approvalTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  View approval tx →
+                </a>
+              </div>
+            )}
+
+            {/* Progress indicator */}
+            <div className="flex items-center gap-2 text-xs text-blue-600">
+              <div className={`w-2 h-2 rounded-full ${['checking_balance', 'checking_allowance', 'approval_needed', 'approving', 'approval_confirmed', 'creating_channel', 'channel_created'].includes(approvalStatus.state) ? 'bg-blue-500' : 'bg-gray-300'}`} />
+              <span>Check Balance</span>
+              <div className="flex-1 h-px bg-blue-200" />
+              <div className={`w-2 h-2 rounded-full ${['checking_allowance', 'approval_needed', 'approving', 'approval_confirmed', 'creating_channel', 'channel_created'].includes(approvalStatus.state) ? 'bg-blue-500' : 'bg-gray-300'}`} />
+              <span>Check Approval</span>
+              <div className="flex-1 h-px bg-blue-200" />
+              <div className={`w-2 h-2 rounded-full ${['approving', 'approval_confirmed', 'creating_channel', 'channel_created'].includes(approvalStatus.state) ? 'bg-blue-500' : 'bg-gray-300'}`} />
+              <span>Approve</span>
+              <div className="flex-1 h-px bg-blue-200" />
+              <div className={`w-2 h-2 rounded-full ${['creating_channel', 'channel_created'].includes(approvalStatus.state) ? 'bg-blue-500' : 'bg-gray-300'}`} />
+              <span>Create</span>
+            </div>
+          </div>
+        )}
+
+        {/* Channel Lifecycle Status Display */}
+        {lifecycleStatus && lifecycleStatus.stage !== 'idle' && (
+          <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-purple-900">
+                {lifecycleStatus.stage === 'connecting' && '🔌 Connecting to Yellow Network...'}
+                {lifecycleStatus.stage === 'authenticating' && '🔐 Authenticating...'}
+                {lifecycleStatus.stage === 'checking_channels' && '🔍 Checking existing channels...'}
+                {lifecycleStatus.stage === 'cleaning_up' && '🧹 Cleaning up stale channels...'}
+                {lifecycleStatus.stage === 'creating_channel' && '🏗️ Creating channel on-chain...'}
+                {lifecycleStatus.stage === 'waiting_create_index' && '⏳ Waiting for Node indexing...'}
+                {lifecycleStatus.stage === 'funding_channel' && '💰 Funding channel...'}
+                {lifecycleStatus.stage === 'channel_active' && '✅ Channel active'}
+                {lifecycleStatus.stage === 'closing_channel' && '🔒 Closing channel...'}
+                {lifecycleStatus.stage === 'waiting_close_index' && '⏳ Waiting for Node indexing...'}
+                {lifecycleStatus.stage === 'complete' && '✅ Lifecycle complete'}
+                {lifecycleStatus.stage === 'error' && '❌ Error occurred'}
+              </span>
+            </div>
+
+            {/* Show channel info */}
+            {lifecycleStatus.channelId && (
+              <div className="text-xs text-purple-700">
+                Channel: {lifecycleStatus.channelId.slice(0, 10)}...{lifecycleStatus.channelId.slice(-6)}
+              </div>
+            )}
+
+            {/* Show message (e.g., countdown info) */}
+            {lifecycleStatus.message && (
+              <div className="text-xs text-purple-600 font-medium">
+                {lifecycleStatus.message}
+              </div>
+            )}
+
+            {/* Etherscan links for on-chain transactions */}
+            {lifecycleStatus.createTxHash && (
+              <div className="text-xs text-purple-600">
+                <a 
+                  href={`https://sepolia.etherscan.io/tx/${lifecycleStatus.createTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline flex items-center gap-1"
+                >
+                  <span>🔗</span>
+                  <span>View Create TX on Etherscan →</span>
+                </a>
+              </div>
+            )}
+            {lifecycleStatus.closeTxHash && (
+              <div className="text-xs text-purple-600">
+                <a 
+                  href={`https://sepolia.etherscan.io/tx/${lifecycleStatus.closeTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline flex items-center gap-1"
+                >
+                  <span>🔗</span>
+                  <span>View Close TX on Etherscan →</span>
+                </a>
+              </div>
+            )}
+
+            {/* Lifecycle progress indicator */}
+            <div className="flex items-center gap-1 text-xs text-purple-600">
+              <div className={`w-2 h-2 rounded-full ${['connecting', 'authenticating', 'checking_channels', 'cleaning_up', 'creating_channel', 'waiting_create_index', 'funding_channel', 'channel_active', 'closing_channel', 'waiting_close_index', 'complete'].includes(lifecycleStatus.stage) ? 'bg-purple-500' : 'bg-gray-300'}`} />
+              <span>Connect</span>
+              <div className="flex-1 h-px bg-purple-200" />
+              <div className={`w-2 h-2 rounded-full ${['creating_channel', 'waiting_create_index', 'funding_channel', 'channel_active', 'closing_channel', 'waiting_close_index', 'complete'].includes(lifecycleStatus.stage) ? 'bg-purple-500' : 'bg-gray-300'}`} />
+              <span>Create</span>
+              <div className="flex-1 h-px bg-purple-200" />
+              <div className={`w-2 h-2 rounded-full ${['channel_active', 'closing_channel', 'waiting_close_index', 'complete'].includes(lifecycleStatus.stage) ? 'bg-purple-500' : 'bg-gray-300'}`} />
+              <span>Fund</span>
+              <div className="flex-1 h-px bg-purple-200" />
+              <div className={`w-2 h-2 rounded-full ${['closing_channel', 'waiting_close_index', 'complete'].includes(lifecycleStatus.stage) ? 'bg-purple-500' : 'bg-gray-300'}`} />
+              <span>Close</span>
+              <div className="flex-1 h-px bg-purple-200" />
+              <div className={`w-2 h-2 rounded-full ${['complete'].includes(lifecycleStatus.stage) ? 'bg-purple-500' : 'bg-gray-300'}`} />
+              <span>Done</span>
+            </div>
+          </div>
+        )}
+
+        {/* Error states for approval */}
+        {approvalStatus.state === 'balance_check_failed' && approvalStatus.error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="font-medium mb-1">Insufficient Balance</div>
+            <div>{approvalStatus.error}</div>
+            <div className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRequestFaucet}
+                disabled={!isWalletConnected || faucetLoading}
+                className="text-xs"
+              >
+                Use Faucet
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {approvalStatus.state === 'approval_rejected' && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm">
+            <div className="font-medium mb-1">Approval Cancelled</div>
+            <div>You cancelled the token approval. Click &quot;Create Channel&quot; to try again.</div>
+          </div>
+        )}
+
+        {approvalStatus.state === 'approval_failed' && approvalStatus.error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="font-medium mb-1">Approval Failed</div>
+            <div>{approvalStatus.error}</div>
+          </div>
+        )}
+
+        {approvalStatus.state === 'channel_creation_failed' && approvalStatus.error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="font-medium mb-1">Channel Creation Failed</div>
+            <div>{approvalStatus.error}</div>
+            <div className="mt-1 text-xs">Your token approval is still valid.</div>
           </div>
         )}
 
@@ -243,11 +438,11 @@ export function SessionManager({
                       onClick={handleCreateSession}
                       disabled={!canCreateSession || !budgetInput}
                     >
-                      {isLoading ? 'Creating...' : 'Create Channel'}
+                      {isLoading ? 'Creating...' : 'Start Session'}
                     </Button>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Creates an on-chain payment channel on Sepolia testnet
+                    Uses Yellow Network&apos;s unified balance for instant, gasless transfers
                   </p>
                 </div>
               </>
@@ -293,15 +488,43 @@ export function SessionManager({
 
             {/* Actions */}
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={handleCloseSession}
-                disabled={!canCloseSession}
-              >
-                {isLoading ? 'Settling...' : 'Settle & Close'}
-              </Button>
+              {/* Show different buttons based on channel type */}
+              {session.channelId && session.channelId.startsWith('0x') ? (
+                // On-chain channel - show Settle & Close button
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={handleCloseSession}
+                  disabled={!canCloseSession}
+                >
+                  {isLoading ? 'Settling...' : 'Settle & Close'}
+                </Button>
+              ) : (
+                // Unified balance mode - show End Session button
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    // Reset session for unified balance mode
+                    // No on-chain settlement needed
+                    window.location.reload();
+                  }}
+                >
+                  End Session
+                </Button>
+              )}
             </div>
+            
+            {/* Info about channel mode */}
+            {session.channelId?.startsWith('0x') ? (
+              <div className="p-2 bg-purple-50 border border-purple-200 rounded text-xs text-purple-700">
+                🔗 On-Chain Mode: Channel will be settled on Sepolia when closed
+              </div>
+            ) : (
+              <div className="p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
+                ⚡ Gasless Mode: Transfers are instant with no on-chain settlement needed
+              </div>
+            )}
           </div>
         )}
       </CardContent>

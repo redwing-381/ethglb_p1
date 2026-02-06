@@ -11,7 +11,7 @@ import {
   getCachedReverseResolution, 
   setCachedReverseResolution,
   truncateAddress 
-} from '@/lib/ens';
+} from '@/lib/blockchain';
 import { useEffect, useState } from 'react';
 
 export interface UseEnsNameResult {

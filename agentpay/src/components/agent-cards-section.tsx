@@ -7,7 +7,7 @@
 'use client';
 
 import { AgentCard } from './agent-card';
-import { getAllAgents } from '@/lib/agent-registry';
+import { getAllAgents } from '@/lib/ai';
 
 export function AgentCardsSection() {
   const agents = getAllAgents();

@@ -9,7 +9,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { parseUnits, formatUnits, erc20Abi } from 'viem';
 import type { LiFiQuote, StatusResponse, QuoteParams } from '@/types/lifi';
-import { getQuote, getStatus } from '@/lib/lifi';
+import { getQuote, getStatus } from '@/lib/blockchain';
 
 /**
  * Hook return type

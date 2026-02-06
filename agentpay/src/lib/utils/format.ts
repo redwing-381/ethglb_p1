@@ -6,17 +6,22 @@
  */
 
 /**
- * Formats a ytest.usd amount (6 decimals) for display
+ * Formats a ytest.usd amount for display
  * 
- * @param amount - Raw amount from Yellow Network (in smallest unit)
+ * Intelligently handles both:
+ * - Raw units (e.g., 5000000 for 5 USDC)
+ * - Human-readable format (e.g., "5.00" or "0.02")
+ * 
+ * @param amount - Amount in either raw units or human-readable format
  * @param decimals - Number of decimals (default: 6 for ytest.usd)
  * @returns Formatted string like "5.00 USDC"
  * 
  * @example
- * formatUSDC(5000000) // Returns: "5.00 USDC"
- * formatUSDC("5000000") // Returns: "5.00 USDC"
+ * formatUSDC(5000000) // Returns: "5.00 USDC" (raw units)
+ * formatUSDC("5000000") // Returns: "5.00 USDC" (raw units as string)
+ * formatUSDC("5.00") // Returns: "5.00 USDC" (human-readable)
+ * formatUSDC("0.02") // Returns: "0.02 USDC" (human-readable)
  * formatUSDC(null) // Returns: "0.00 USDC"
- * formatUSDC(0) // Returns: "0.00 USDC"
  */
 export function formatUSDC(
   amount: number | string | null | undefined,
@@ -35,8 +40,20 @@ export function formatUSDC(
     return '0.00 USDC';
   }
   
-  // Divide by 10^decimals and format to 2 decimal places
-  const formatted = (numAmount / Math.pow(10, decimals)).toFixed(2);
+  // Detect if this is raw units or human-readable format
+  // Raw units for USDC would be >= 1000 for even 0.001 USDC
+  // Human-readable amounts are typically < 1000 (e.g., 0.02, 5.00, 100.00)
+  // We use 1000 as threshold since amounts > 1000 USDC are unlikely in this app
+  const isRawUnits = numAmount >= 1000;
+  
+  let formatted: string;
+  if (isRawUnits) {
+    // Divide by 10^decimals and format to 2 decimal places
+    formatted = (numAmount / Math.pow(10, decimals)).toFixed(2);
+  } else {
+    // Already in human-readable format
+    formatted = numAmount.toFixed(2);
+  }
   
   return `${formatted} USDC`;
 }
@@ -44,13 +61,19 @@ export function formatUSDC(
 /**
  * Formats amount without currency suffix
  * 
- * @param amount - Raw amount from Yellow Network (in smallest unit)
+ * Intelligently handles both:
+ * - Raw units (e.g., 5000000 for 5 USDC)
+ * - Human-readable format (e.g., "5.00" or "0.02")
+ * 
+ * @param amount - Amount in either raw units or human-readable format
  * @param decimals - Number of decimals (default: 6 for ytest.usd)
  * @returns Formatted string like "5.00"
  * 
  * @example
- * formatAmount(5000000) // Returns: "5.00"
- * formatAmount("5000000") // Returns: "5.00"
+ * formatAmount(5000000) // Returns: "5.00" (raw units)
+ * formatAmount("5000000") // Returns: "5.00" (raw units as string)
+ * formatAmount("5.00") // Returns: "5.00" (human-readable)
+ * formatAmount("0.02") // Returns: "0.02" (human-readable)
  */
 export function formatAmount(
   amount: number | string | null | undefined,
@@ -66,7 +89,14 @@ export function formatAmount(
     return '0.00';
   }
   
-  return (numAmount / Math.pow(10, decimals)).toFixed(2);
+  // Detect if this is raw units or human-readable format
+  const isRawUnits = numAmount >= 1000;
+  
+  if (isRawUnits) {
+    return (numAmount / Math.pow(10, decimals)).toFixed(2);
+  } else {
+    return numAmount.toFixed(2);
+  }
 }
 
 /**
