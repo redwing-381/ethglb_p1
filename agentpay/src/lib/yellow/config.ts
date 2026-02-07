@@ -57,32 +57,44 @@ export const PLATFORM_CONFIG = {
 // ============================================================================
 
 /**
+ * Debate agent types for the AI Debate Arena.
+ */
+export type DebateAgentType = 
+  | 'moderator' 
+  | 'debater_a' 
+  | 'debater_b' 
+  | 'fact_checker' 
+  | 'judge' 
+  | 'summarizer';
+
+/**
  * Agent wallet addresses for payment routing.
- * These addresses receive payments when agents complete work.
- * 
- * Each agent has a dedicated wallet that receives USDC payments
- * for completed tasks on the Yellow Network.
+ * Each debate agent has a dedicated wallet that receives USDC payments
+ * for contributions during debates on the Yellow Network.
  */
 export const AGENT_ADDRESSES = {
-  ORCHESTRATOR: '0x6894542573F3B5ed2f8d3125b4f08e2777d77523' as const,
-  RESEARCHER: '0xee9956a99bCCf064EA3f02e8878E57A5B53E311B' as const,
-  WRITER: '0xBE26c2208763aEB6e793758621F528Bc302b4A80' as const,
+  MODERATOR:    '0x1a2B3c4D5e6F7a8B9c0D1E2F3a4B5C6D7E8F9a0b' as const,
+  DEBATER_A:    '0x2b3C4d5E6f7A8b9C0d1E2f3A4b5C6d7E8f9A0B1c' as const,
+  DEBATER_B:    '0x3c4D5e6F7a8B9c0D1e2F3a4B5c6D7e8F9a0B1C2d' as const,
+  FACT_CHECKER: '0x4d5E6f7A8b9C0d1E2f3A4b5C6d7E8f9A0b1C2D3e' as const,
+  JUDGE:        '0x5e6F7a8B9c0D1e2F3a4B5c6D7e8F9a0B1c2D3E4f' as const,
+  SUMMARIZER:   '0x6f7A8b9C0d1E2f3A4b5C6d7E8f9A0b1C2d3E4F5a' as const,
   PLATFORM: PLATFORM_CONFIG.FEE_ADDRESS,
 } as const;
 
 export type AgentAddressKey = keyof typeof AGENT_ADDRESSES;
 
 /**
- * Get the payment address for a specific agent type.
- * 
- * @param agentType - The type of agent ('orchestrator', 'researcher', 'writer')
- * @returns The Ethereum address for that agent
+ * Get the payment address for a specific debate agent type.
  */
-export function getAgentAddress(agentType: 'orchestrator' | 'researcher' | 'writer'): `0x${string}` {
-  const mapping: Record<string, `0x${string}`> = {
-    orchestrator: AGENT_ADDRESSES.ORCHESTRATOR,
-    researcher: AGENT_ADDRESSES.RESEARCHER,
-    writer: AGENT_ADDRESSES.WRITER,
+export function getAgentAddress(agentType: DebateAgentType): `0x${string}` {
+  const mapping: Record<DebateAgentType, `0x${string}`> = {
+    moderator: AGENT_ADDRESSES.MODERATOR,
+    debater_a: AGENT_ADDRESSES.DEBATER_A,
+    debater_b: AGENT_ADDRESSES.DEBATER_B,
+    fact_checker: AGENT_ADDRESSES.FACT_CHECKER,
+    judge: AGENT_ADDRESSES.JUDGE,
+    summarizer: AGENT_ADDRESSES.SUMMARIZER,
   };
   return mapping[agentType];
 }

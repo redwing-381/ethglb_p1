@@ -8,7 +8,6 @@ import { SessionState } from '@/types';
 import type { WalletFunctions, CloseChannelWalletFunctions } from '@/types/wallet';
 import type { ApprovalStatus, ChannelLifecycleStatus } from '@/hooks/use-yellow-session';
 import { requestFaucetTokens } from '@/lib/yellow';
-import { DepositFlow } from '@/components/deposit-flow';
 import { formatUSDC } from '@/lib/utils';
 
 interface SessionManagerProps {
@@ -55,7 +54,6 @@ export function SessionManager({
   const [budgetInput, setBudgetInput] = useState('5');
   const [faucetLoading, setFaucetLoading] = useState(false);
   const [faucetMessage, setFaucetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [showDepositFlow, setShowDepositFlow] = useState(false);
 
   const handleRequestFaucet = async () => {
     if (!walletAddress) return;
@@ -85,14 +83,6 @@ export function SessionManager({
     } finally {
       setFaucetLoading(false);
     }
-  };
-
-  const handleDepositComplete = () => {
-    setShowDepositFlow(false);
-    setFaucetMessage({
-      type: 'success',
-      text: '✅ Bridge completed! Your funds should arrive shortly. You can now create a session.',
-    });
   };
 
   const handleCreateSession = async () => {
@@ -366,15 +356,6 @@ export function SessionManager({
         {!hasSession ? (
           // Create session form
           <div className="space-y-4">
-            {/* Show DepositFlow if enabled */}
-            {showDepositFlow ? (
-              <div className="space-y-4">
-                <DepositFlow
-                  onComplete={handleDepositComplete}
-                  onCancel={() => setShowDepositFlow(false)}
-                />
-              </div>
-            ) : (
               <>
                 {/* Faucet Section */}
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -398,25 +379,6 @@ export function SessionManager({
                       {faucetMessage.text}
                     </p>
                   )}
-                </div>
-
-                {/* Cross-Chain Deposit Section */}
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="text-sm font-medium text-purple-800">Deposit from another chain</p>
-                      <p className="text-xs text-purple-600">Bridge USDC from Ethereum, Polygon, Arbitrum, etc.</p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowDepositFlow(true)}
-                      disabled={!isWalletConnected}
-                      className="bg-white"
-                    >
-                      🌉 Bridge
-                    </Button>
-                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -446,7 +408,6 @@ export function SessionManager({
                   </p>
                 </div>
               </>
-            )}
           </div>
         ) : (
           // Active session display

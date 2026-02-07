@@ -1,34 +1,35 @@
 /**
  * Agent Cards Section Component
  * 
- * Displays all three AI agents with their information and pricing
+ * Displays all six debate agents with their information and pricing
  */
 
 'use client';
 
 import { AgentCard } from './agent-card';
-import { getAllAgents, AGENT_CONFIGS } from '@/lib/ai';
-import type { AgentType } from '@/lib/ai';
+import { getAllAgents } from '@/lib/ai';
+import { DEBATE_PRICING } from '@/lib/debate';
+import type { DebateAgentType } from '@/types';
+
+const NAME_TO_TYPE: Record<string, DebateAgentType> = {
+  'Moderator': 'moderator',
+  'Debater A': 'debater_a',
+  'Debater B': 'debater_b',
+  'Fact Checker': 'fact_checker',
+  'Judge': 'judge',
+  'Summarizer': 'summarizer',
+};
 
 export function AgentCardsSection() {
   const agents = getAllAgents();
 
-  // Map agent names to types for pricing lookup
-  const nameToType: Record<string, AgentType> = {
-    'Orchestrator': 'orchestrator',
-    'Researcher': 'researcher',
-    'Writer': 'writer',
-  };
-
   return (
     <div>
-      <h3 className="text-sm font-medium text-gray-700 mb-3">Available Agents</h3>
+      <h3 className="text-sm font-medium text-gray-700 mb-3">Debate Agents</h3>
       <div className="space-y-2">
         {agents.map((agent) => {
-          const agentType = nameToType[agent.name];
-          const config = agentType ? AGENT_CONFIGS[agentType] : null;
-          const basePrice = config?.pricing?.basePrice;
-          
+          const agentType = NAME_TO_TYPE[agent.name];
+          const pricing = agentType ? DEBATE_PRICING[agentType] : null;
           return (
             <AgentCard
               key={agent.address}
@@ -36,7 +37,7 @@ export function AgentCardsSection() {
               name={agent.name}
               description={agent.description}
               icon={agent.icon}
-              basePrice={basePrice}
+              basePrice={pricing?.basePrice}
             />
           );
         })}

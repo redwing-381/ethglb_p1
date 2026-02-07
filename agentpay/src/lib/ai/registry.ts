@@ -5,7 +5,7 @@
  * Maps agent addresses to human-readable names and metadata.
  */
 
-import { getAgentAddress } from '../yellow/config';
+import { getAgentAddress, type DebateAgentType } from '../yellow/config';
 import { truncateAddress } from '../blockchain/ens';
 
 export interface AgentInfo {
@@ -15,25 +15,43 @@ export interface AgentInfo {
   icon: string;
 }
 
-// Agent definitions
-const AGENTS: Record<string, AgentInfo> = {
-  orchestrator: {
-    address: getAgentAddress('orchestrator'),
-    name: 'Orchestrator',
-    description: 'Plans and coordinates tasks',
-    icon: '🎯',
+// Debate agent definitions
+const AGENTS: Record<DebateAgentType, AgentInfo> = {
+  moderator: {
+    address: getAgentAddress('moderator'),
+    name: 'Moderator',
+    description: 'Sets up and manages the debate',
+    icon: '🎙️',
   },
-  researcher: {
-    address: getAgentAddress('researcher'),
-    name: 'Researcher',
-    description: 'Gathers information and data',
+  debater_a: {
+    address: getAgentAddress('debater_a'),
+    name: 'Debater A',
+    description: 'Argues FOR the topic',
+    icon: '🔵',
+  },
+  debater_b: {
+    address: getAgentAddress('debater_b'),
+    name: 'Debater B',
+    description: 'Argues AGAINST the topic',
+    icon: '🔴',
+  },
+  fact_checker: {
+    address: getAgentAddress('fact_checker'),
+    name: 'Fact Checker',
+    description: 'Verifies claims from both sides',
     icon: '🔍',
   },
-  writer: {
-    address: getAgentAddress('writer'),
-    name: 'Writer',
-    description: 'Creates content and documentation',
-    icon: '✍️',
+  judge: {
+    address: getAgentAddress('judge'),
+    name: 'Judge',
+    description: 'Scores rounds and delivers verdict',
+    icon: '⚖️',
+  },
+  summarizer: {
+    address: getAgentAddress('summarizer'),
+    name: 'Summarizer',
+    description: 'Produces the final debate summary',
+    icon: '📝',
   },
 };
 
@@ -45,9 +63,6 @@ Object.values(AGENTS).forEach(agent => {
 
 /**
  * Get agent info by address
- * 
- * @param address - Ethereum address to lookup
- * @returns Agent info if found, undefined otherwise
  */
 export function getAgentInfo(address: string): AgentInfo | undefined {
   return ADDRESS_TO_AGENT.get(address.toLowerCase());
@@ -56,26 +71,16 @@ export function getAgentInfo(address: string): AgentInfo | undefined {
 /**
  * Get display name for an address
  * Returns agent name if known, ENS name if provided, or truncated address
- * 
- * @param address - Ethereum address
- * @param ensName - Optional ENS name
- * @returns Display name for the address
  */
 export function getDisplayName(address: string, ensName?: string | null): string {
   const agent = getAgentInfo(address);
-  if (agent) {
-    return agent.name;
-  }
-  if (ensName) {
-    return ensName;
-  }
+  if (agent) return agent.name;
+  if (ensName) return ensName;
   return truncateAddress(address);
 }
 
 /**
  * Get all registered agents
- * 
- * @returns Array of all agent info objects
  */
 export function getAllAgents(): AgentInfo[] {
   return Object.values(AGENTS);
@@ -83,10 +88,14 @@ export function getAllAgents(): AgentInfo[] {
 
 /**
  * Check if an address is a known agent
- * 
- * @param address - Ethereum address to check
- * @returns True if address belongs to a known agent
  */
 export function isKnownAgent(address: string): boolean {
   return ADDRESS_TO_AGENT.has(address.toLowerCase());
+}
+
+/**
+ * Get agent info by type
+ */
+export function getAgentByType(agentType: DebateAgentType): AgentInfo {
+  return AGENTS[agentType];
 }

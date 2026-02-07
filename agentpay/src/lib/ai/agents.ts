@@ -1,110 +1,138 @@
 /**
- * AI Agent Execution
+ * AI Agent Execution - Debate Arena
  * 
  * Provides agent execution logic using OpenRouter for AI model access.
- * Includes orchestrator for task breakdown and specialized agents for execution.
+ * Configured for the 6-agent debate system.
  */
 
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
-import { AGENT_ADDRESSES } from '../yellow/config';
-import { AGENT_PRICING, calculateTaskCost } from '../payment/price-calculator';
+import { AGENT_ADDRESSES, type DebateAgentType } from '../yellow/config';
+import type { AgentResult } from '@/types';
 
-// Agent types
-export type AgentType = 'orchestrator' | 'researcher' | 'writer';
-
-// Agent pricing interface
-export interface AgentPricing {
-  basePrice: string;
-  complexityMultiplier: number;
-}
-
-// Agent configuration
-export interface AgentConfig {
+export interface DebateAgentConfig {
   name: string;
-  type: AgentType;
-  /** @deprecated Use pricing.basePrice instead */
-  costPerTask: string;
-  pricing: AgentPricing;
+  type: DebateAgentType;
   model: string;
   systemPrompt: string;
   maxTokens: number;
   address: `0x${string}`;
-}
-
-// Agent result
-export interface AgentResult {
-  content: string;
-  success: boolean;
-  error?: string;
-}
-
-// Sub-task from orchestrator
-export interface SubTask {
-  id: string;
+  icon: string;
   description: string;
-  agentType: AgentType;
-  order: number;
 }
 
-// Orchestrator plan
-export interface OrchestratorPlan {
-  subTasks: SubTask[];
-  estimatedCost: string;
-}
+export const DEBATE_AGENT_CONFIGS: Record<DebateAgentType, DebateAgentConfig> = {
+  moderator: {
+    name: 'Moderator',
+    type: 'moderator',
+    model: 'openai/gpt-4o',
+    address: AGENT_ADDRESSES.MODERATOR,
+    icon: '🎙️',
+    description: 'Sets up and manages the debate',
+    maxTokens: 800,
+    systemPrompt: `You are a debate moderator. Given a topic, introduce the debate by:
+1. Stating the topic clearly
+2. Explaining why it matters
+3. Setting ground rules (be respectful, cite evidence, stay on topic)
+4. Inviting both sides to present their arguments
 
-// Agent configurations with different models per role
-export const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
-  orchestrator: {
-    name: 'Orchestrator',
-    type: 'orchestrator',
-    costPerTask: '0', // deprecated
-    pricing: AGENT_PRICING.orchestrator,
-    model: 'openai/gpt-4o', // More capable for planning
-    address: AGENT_ADDRESSES.ORCHESTRATOR,
-    systemPrompt: `You are a task orchestrator for an AI agent marketplace. Analyze the user's task and break it down into sub-tasks.
+Keep your introduction concise (2-3 paragraphs). Be neutral and professional.`,
+  },
+  debater_a: {
+    name: 'Debater A',
+    type: 'debater_a',
+    model: 'openai/gpt-4o',
+    address: AGENT_ADDRESSES.DEBATER_A,
+    icon: '🔵',
+    description: 'Argues FOR the topic',
+    maxTokens: 1200,
+    systemPrompt: `You are Debater A, arguing FOR the given topic. Build strong, evidence-based arguments.
 
-IMPORTANT: Return ONLY a valid JSON object with this exact structure:
-{
-  "subTasks": [
-    { "description": "specific task description", "agentType": "researcher" },
-    { "description": "specific task description", "agentType": "writer" }
-  ]
-}
+Structure your argument:
+1. Main thesis statement
+2. 2-3 supporting points with reasoning
+3. Address potential counterarguments preemptively
 
-Rules:
-- Use "researcher" for gathering information, analysis, or investigation tasks
-- Use "writer" for creating content, summaries, or documentation tasks
-- Keep sub-tasks focused and actionable
-- Typically 2-4 sub-tasks per user request
-- Return ONLY the JSON, no other text`,
+If previous rounds exist, respond to the opposing side's points directly. Be persuasive but factual.`,
+  },
+  debater_b: {
+    name: 'Debater B',
+    type: 'debater_b',
+    model: 'openai/gpt-4o',
+    address: AGENT_ADDRESSES.DEBATER_B,
+    icon: '🔴',
+    description: 'Argues AGAINST the topic',
+    maxTokens: 1200,
+    systemPrompt: `You are Debater B, arguing AGAINST the given topic. Build strong, evidence-based counter-arguments.
+
+Structure your argument:
+1. Main counter-thesis
+2. 2-3 points challenging the pro side
+3. Present alternative perspectives
+
+If previous rounds exist, directly rebut the opposing side's latest points. Be persuasive but factual.`,
+  },
+  fact_checker: {
+    name: 'Fact Checker',
+    type: 'fact_checker',
+    model: 'openai/gpt-4o-mini',
+    address: AGENT_ADDRESSES.FACT_CHECKER,
+    icon: '🔍',
+    description: 'Verifies claims from both sides',
     maxTokens: 1000,
-  },
-  researcher: {
-    name: 'Researcher',
-    type: 'researcher',
-    costPerTask: '0.02', // deprecated
-    pricing: AGENT_PRICING.researcher,
-    model: 'openai/gpt-4o-mini', // Good for research
-    address: AGENT_ADDRESSES.RESEARCHER,
-    systemPrompt: `You are a research specialist in an AI agent marketplace. Your job is to gather and synthesize information on the given topic.
+    systemPrompt: `You are a fact checker. Analyze claims made by both debaters in the current round.
 
-Provide factual, well-organized research findings. Be thorough but concise.
-Format your response with clear sections and bullet points where appropriate.`,
-    maxTokens: 2000,
-  },
-  writer: {
-    name: 'Writer',
-    type: 'writer',
-    costPerTask: '0.02', // deprecated
-    pricing: AGENT_PRICING.writer,
-    model: 'anthropic/claude-3-haiku', // Good for writing
-    address: AGENT_ADDRESSES.WRITER,
-    systemPrompt: `You are a content writer in an AI agent marketplace. Create clear, engaging content based on the provided information.
+Return ONLY valid JSON in this format:
+{
+  "claims": [
+    {
+      "claim": "the specific claim",
+      "source": "debater_a" or "debater_b",
+      "verdict": "accurate" or "misleading" or "false" or "unverifiable",
+      "explanation": "brief explanation"
+    }
+  ],
+  "overallAssessment": "brief overall assessment of factual accuracy this round"
+}
 
-Format your output with proper structure and readability.
-Use headings, paragraphs, and lists as appropriate for the content type.`,
-    maxTokens: 2000,
+Check 2-4 key claims per round. Be fair to both sides.`,
+  },
+  judge: {
+    name: 'Judge',
+    type: 'judge',
+    model: 'openai/gpt-4o',
+    address: AGENT_ADDRESSES.JUDGE,
+    icon: '⚖️',
+    description: 'Scores rounds and delivers verdict',
+    maxTokens: 800,
+    systemPrompt: `You are the debate judge. Score the current round based on argument quality, evidence, and persuasiveness.
+
+Return ONLY valid JSON:
+{
+  "proScore": <1-10>,
+  "conScore": <1-10>,
+  "reasoning": "brief explanation of scores",
+  "needsMoreRounds": <true if scores are within 2 points of each other, false otherwise>
+}
+
+Be fair and objective. Consider argument strength, evidence quality, and rebuttal effectiveness.`,
+  },
+  summarizer: {
+    name: 'Summarizer',
+    type: 'summarizer',
+    model: 'openai/gpt-4o-mini',
+    address: AGENT_ADDRESSES.SUMMARIZER,
+    icon: '📝',
+    description: 'Produces the final debate summary',
+    maxTokens: 1000,
+    systemPrompt: `You are a debate summarizer. Given the full debate transcript, produce a concise summary:
+
+1. Topic and key question
+2. Strongest arguments from each side (2-3 bullet points each)
+3. Key facts verified or disputed
+4. Final assessment of which side presented a stronger case and why
+
+Be balanced and informative. This is the final takeaway for the audience.`,
   },
 };
 
@@ -120,96 +148,36 @@ export function createOpenRouterClient() {
 }
 
 /**
- * Execute an agent with a task
- * 
- * @param agentType - Type of agent to execute
- * @param task - Task description
- * @param context - Optional context from previous work
- * @returns Agent execution result
+ * Execute a debate agent with a prompt
  */
 export async function executeAgent(
-  agentType: AgentType,
-  task: string,
+  agentType: DebateAgentType,
+  prompt: string,
   context?: string
 ): Promise<AgentResult> {
-  const config = AGENT_CONFIGS[agentType];
-  
+  const config = DEBATE_AGENT_CONFIGS[agentType];
+
   try {
     const openrouter = createOpenRouterClient();
-    
-    const prompt = context 
-      ? `Context from previous work:\n${context}\n\nTask: ${task}`
-      : task;
+
+    const fullPrompt = context
+      ? `Context from debate so far:\n${context}\n\n${prompt}`
+      : prompt;
 
     const { text } = await generateText({
       model: openrouter(config.model),
       system: config.systemPrompt,
-      prompt,
+      prompt: fullPrompt,
       maxOutputTokens: config.maxTokens,
     });
 
-    return {
-      content: text,
-      success: true,
-    };
+    return { content: text, success: true };
   } catch (error) {
     console.error(`Agent ${agentType} execution failed:`, error);
     return {
       content: '',
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
- * Parse orchestrator response into sub-tasks
- * 
- * @param response - Raw orchestrator response
- * @returns Parsed orchestrator plan with sub-tasks
- */
-export function parseOrchestratorPlan(response: string): OrchestratorPlan {
-  try {
-    // Try to extract JSON from the response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No JSON found in response');
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    
-    if (!Array.isArray(parsed.subTasks)) {
-      throw new Error('Invalid subTasks format');
-    }
-
-    const subTasks: SubTask[] = parsed.subTasks.map((st: { description: string; agentType: string }, index: number) => ({
-      id: `subtask-${Date.now()}-${index}`,
-      description: st.description,
-      agentType: st.agentType as AgentType,
-      order: index,
-    }));
-
-    // Calculate estimated cost using the new price calculator (includes platform fee)
-    const costBreakdown = calculateTaskCost(subTasks);
-
-    return {
-      subTasks,
-      estimatedCost: costBreakdown.totalCost,
-    };
-  } catch (error) {
-    console.error('Failed to parse orchestrator plan:', error);
-    // Return a default plan with a single researcher task
-    const defaultSubTasks: SubTask[] = [{
-      id: `subtask-${Date.now()}-0`,
-      description: 'Research and respond to the user request',
-      agentType: 'researcher',
-      order: 0,
-    }];
-    const costBreakdown = calculateTaskCost(defaultSubTasks);
-    
-    return {
-      subTasks: defaultSubTasks,
-      estimatedCost: costBreakdown.totalCost,
     };
   }
 }

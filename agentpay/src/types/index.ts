@@ -31,65 +31,113 @@ export interface PaymentRecord {
   timestamp: number;
 }
 
-// Task Types
-export interface TaskState {
-  id: string;
-  description: string;
-  status: TaskStatus;
-  subTasks: SubTaskState[];
-  result: string | null;
+// ============================================================================
+// Debate Agent Types
+// ============================================================================
+
+export type DebateAgentType = 
+  | 'moderator' 
+  | 'debater_a' 
+  | 'debater_b' 
+  | 'fact_checker' 
+  | 'judge' 
+  | 'summarizer';
+
+export interface DebateContribution {
+  role: DebateAgentType;
+  agentName: string;
+  content: string;
+  round: number;        // 0 for intro/verdict/summary, 1-3 for rounds
+  timestamp: number;
+  score?: RoundScore;
+  factCheckResult?: FactCheckResult;
+}
+
+export interface RoundScore {
+  proScore: number;     // 1-10
+  conScore: number;     // 1-10
+  reasoning: string;
+  needsMoreRounds: boolean;
+}
+
+export interface FactCheckResult {
+  claims: ClaimVerification[];
+  overallAssessment: string;
+}
+
+export interface ClaimVerification {
+  claim: string;
+  source: 'debater_a' | 'debater_b';
+  verdict: 'accurate' | 'misleading' | 'false' | 'unverifiable';
+  explanation: string;
+}
+
+export interface DebateState {
+  topic: string;
+  currentRound: number;
+  maxRounds: number;
+  contributions: DebateContribution[];
+  scores: RoundScore[];
+  isComplete: boolean;
+}
+
+export interface DebateTranscript {
+  topic: string;
+  rounds: DebateRound[];
+  verdict: string;
+  summary: string;
+  winner: 'pro' | 'con' | 'tie';
+  totalRounds: number;
+}
+
+export interface DebateRound {
+  number: number;
+  proArgument: string;
+  conArgument: string;
+  factCheck: FactCheckResult;
+  score: RoundScore;
+}
+
+export interface DebateCostBreakdown {
+  agentCosts: Array<{
+    agentType: DebateAgentType | 'judge_verdict';
+    agentName: string;
+    amount: string;
+    label: string;
+  }>;
+  platformFee: string;
+  platformFeePercentage: number;
+  totalAgentCost: string;
   totalCost: string;
-  startedAt: number;
-  completedAt: number | null;
+  roundCount: number;
 }
 
-export type TaskStatus = 
-  | 'pending' 
-  | 'planning' 
-  | 'executing' 
-  | 'complete' 
-  | 'failed';
-
-export interface SubTaskState {
-  id: string;
-  description: string;
-  agentType: AgentType;
-  status: 'pending' | 'executing' | 'complete' | 'failed';
-  result: string | null;
-  cost: string;
+export interface JudgeResult {
+  content: string;
+  score: RoundScore;
+  success: boolean;
+  error?: string;
 }
 
-// Agent Types
-export type AgentType = 'orchestrator' | 'researcher' | 'writer';
-
-export interface AgentConfig {
-  name: string;
-  type: AgentType;
-  costPerTask: string;
-  model: string;
-  systemPrompt: string;
-  maxTokens: number;
+export interface DebateStepEvent {
+  step: 'moderator_intro' | 'debater_a' | 'debater_b' | 'fact_check' | 'judge_score' | 'judge_verdict' | 'summary';
+  round: number;
+  agentName: string;
+  status: 'started' | 'completed';
 }
 
+
+// Agent Config
 export interface AgentResult {
   content: string;
   success: boolean;
   error?: string;
 }
 
-export interface OrchestratorPlan {
-  subTasks: SubTask[];
-  estimatedCost: string;
-}
-
-export interface SubTask {
-  id: string;
-  description: string;
-  agentType: AgentType;
-  order: number;
-}
-
+// ============================================================================
 // Activity Event Types
+// ============================================================================
+
 export type ActivityEvent = 
   | { id: string; type: 'payment'; timestamp: number; data: PaymentEventData }
   | { id: string; type: 'platform_fee'; timestamp: number; data: PlatformFeeEventData }
@@ -99,7 +147,8 @@ export type ActivityEvent =
   | { id: string; type: 'task_complete'; timestamp: number; data: TaskCompleteData }
   | { id: string; type: 'settlement'; timestamp: number; data: SettlementData }
   | { id: string; type: 'error'; timestamp: number; data: ErrorData }
-  | { id: string; type: 'balance_sync'; timestamp: number; data: BalanceSyncData };
+  | { id: string; type: 'balance_sync'; timestamp: number; data: BalanceSyncData }
+  | { id: string; type: 'round_marker'; timestamp: number; data: RoundMarkerData };
 
 export interface PaymentEventData {
   from: string;
@@ -158,6 +207,11 @@ export interface SettlementData {
   etherscanUrl: string;
 }
 
+export interface RoundMarkerData {
+  round: number;
+  totalRounds: number;
+}
+
 export interface ErrorData {
   message: string;
   code?: string;
@@ -184,53 +238,6 @@ export interface CloseSessionRequest {
 export interface CloseSessionResponse {
   finalBalance: string;
   status: 'closed';
-}
-
-export interface TaskRequest {
-  task: string;
-  channelId: string;
-}
-
-export interface TaskResponse {
-  status: 'processing' | 'complete' | 'error';
-  events: ActivityEvent[];
-  result?: TaskResult;
-  error?: string;
-}
-
-export interface TaskResult {
-  content: string;
-  totalCost: string;
-  agentsUsed: string[];
-  subTaskCount: number;
-  costBreakdown?: CostBreakdown;
-}
-
-// Cost Breakdown Types
-export interface AgentCost {
-  agentType: AgentType;
-  agentName: string;
-  basePrice: string;
-  finalPrice: string;
-}
-
-export interface CostBreakdown {
-  agentCosts: AgentCost[];
-  platformFee: string;
-  platformFeePercentage: number;
-  totalAgentCost: string;
-  totalCost: string;
-}
-
-export interface AgentExecuteRequest {
-  agentType: 'researcher' | 'writer';
-  subTask: string;
-  context?: string;
-}
-
-export interface AgentExecuteResponse {
-  result: string;
-  tokensUsed: number;
 }
 
 // Error Types

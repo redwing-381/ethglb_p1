@@ -18,13 +18,14 @@ function PaymentEvent({ event }: { event: Extract<ActivityEvent, { type: 'paymen
   
   const fromDisplayName = getDisplayName(event.data.from, fromEnsName);
   const toDisplayName = getDisplayName(event.data.to, toEnsName);
+  const toAgent = getAgentInfo(event.data.to);
   
   const isSuccess = event.data.success !== false;
-  const hasError = event.data.error;
   
   return (
     <div className="flex items-center justify-between gap-2 text-sm">
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        {toAgent && <span className="text-sm">{toAgent.icon}</span>}
         <span className="text-gray-600 truncate">{fromDisplayName}</span>
         <span className="text-gray-400">→</span>
         <span className={`font-medium truncate ${isSuccess ? 'text-gray-900' : 'text-red-600'}`}>
@@ -142,6 +143,14 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
             {event.data.agentName} {event.data.success ? 'done' : 'failed'}
           </span>
         );
+      case 'round_marker':
+        return (
+          <div className="text-center py-1">
+            <span className="text-xs font-semibold text-gray-400 tracking-wider">
+              ── Round {event.data.round} of {event.data.totalRounds} ──
+            </span>
+          </div>
+        );
       case 'error':
         return (
           <div className="text-sm text-red-700">
@@ -184,7 +193,7 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
         ) : (
           <div className="text-center py-8">
             <p className="text-sm text-gray-500">No activity yet</p>
-            <p className="text-xs text-gray-400 mt-1">Submit a task to get started</p>
+            <p className="text-xs text-gray-400 mt-1">Start a debate to see payments flow</p>
           </div>
         )}
       </CardContent>

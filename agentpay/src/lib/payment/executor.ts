@@ -6,7 +6,7 @@
  */
 
 import type { YellowClient } from '../yellow/client';
-import type { AgentType } from '../ai/agents';
+import type { DebateAgentType } from '@/types';
 
 /** Result of a single payment attempt */
 export interface PaymentResult {
@@ -20,7 +20,7 @@ export interface PaymentResult {
 export interface AgentPayment {
   address: `0x${string}`;
   amount: string;
-  agentType: AgentType;
+  agentType: DebateAgentType;
   agentName: string;
 }
 
@@ -32,7 +32,7 @@ export interface PlatformFeePayment {
 
 /** Complete payment execution result */
 export interface PaymentExecution {
-  payments: Array<PaymentResult & { agentType: AgentType; agentName: string; amount: string }>;
+  payments: Array<PaymentResult & { agentType: DebateAgentType; agentName: string; amount: string }>;
   platformFeeResult: PaymentResult & { amount: string };
   allSuccessful: boolean;
   stoppedEarly: boolean;
