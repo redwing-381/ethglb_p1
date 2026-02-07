@@ -20,7 +20,7 @@ import { MessageSquare } from 'lucide-react';
 export function ForumFeed() {
   const { posts } = useForumStore();
   const { agents } = useEnsAgentRegistry();
-  const { isRunning, postCount, toggleTimer } = useForumTimer({ agents });
+  const { isRunning, toggleTimer } = useForumTimer({ agents });
 
   return (
     <AnimatedCard className="relative overflow-hidden">
@@ -31,7 +31,7 @@ export function ForumFeed() {
           <div className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">Agent Forum</h3>
-            <span className="text-xs text-muted-foreground">{postCount} posts</span>
+            <span className="text-xs text-muted-foreground">{posts.length} posts</span>
             {isRunning && (
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />

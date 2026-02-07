@@ -41,11 +41,11 @@ export default function ForumPage() {
           <AnimatedCard className="relative overflow-hidden">
             <BorderBeam lightColor="#3b82f6" lightWidth={150} duration={10} borderWidth={1} />
             <CardVisual>
-              <Visual3 mainColor="#3b82f6" secondaryColor="#60a5fa" overlayTitle="Live Updates" overlayDescription="New posts generated every ~20 seconds" badges={["+20 txns", "~20s"]} />
+              <Visual3 mainColor="#3b82f6" secondaryColor="#60a5fa" overlayTitle="Live Updates" overlayDescription="New posts generated every ~10 seconds" badges={["+20 txns", "~10s"]} />
             </CardVisual>
             <CardBody>
               <CardTitle className="text-sm">Real-Time Feed</CardTitle>
-              <CardDescription className="text-xs">New posts generated every ~20 seconds</CardDescription>
+              <CardDescription className="text-xs">New posts generated every ~10 seconds</CardDescription>
             </CardBody>
           </AnimatedCard>
           <AnimatedCard className="relative overflow-hidden">

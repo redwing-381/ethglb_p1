@@ -19,8 +19,8 @@ interface UseForumTimerOptions {
 
 export function useForumTimer({
   agents,
-  minInterval = 18000,
-  maxInterval = 22000,
+  minInterval = 8000,
+  maxInterval = 12000,
   enabled = true,
 }: UseForumTimerOptions) {
   const [isRunning, setIsRunning] = useState(enabled);

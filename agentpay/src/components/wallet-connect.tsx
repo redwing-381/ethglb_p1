@@ -1,11 +1,12 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useDisconnect } from 'wagmi';
+import { useDisconnect, useEnsAvatar } from 'wagmi';
+import { sepolia } from 'wagmi/chains';
 import { useEnsName } from '@/hooks/use-ens-name';
 import { useEffect } from 'react';
 import { clearEnsCache } from '@/lib/blockchain';
-import { LogOut, ChevronDown } from 'lucide-react';
+import { LogOut, ChevronDown, User } from 'lucide-react';
 
 interface WalletConnectProps {
   onConnect?: (address: string) => void;
@@ -30,6 +31,13 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps) {
         
         const { displayName, ensName } = useEnsName(account?.address);
         
+        // Fetch ENS avatar on Sepolia
+        const { data: ensAvatar } = useEnsAvatar({
+          name: ensName || undefined,
+          chainId: sepolia.id,
+          query: { enabled: !!ensName },
+        });
+
         useEffect(() => {
           if (!connected) {
             clearEnsCache();
@@ -99,6 +107,17 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps) {
                     title={account.address}
                   >
                     <div className="flex items-center gap-2">
+                      {ensAvatar ? (
+                        <img
+                          src={ensAvatar}
+                          alt={ensName || 'ENS avatar'}
+                          className="w-5 h-5 rounded-full object-cover"
+                        />
+                      ) : ensName ? (
+                        <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                          <User className="w-3 h-3 text-primary" />
+                        </div>
+                      ) : null}
                       <span className="text-sm font-medium text-foreground">
                         {displayName}
                       </span>
