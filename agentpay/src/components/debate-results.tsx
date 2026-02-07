@@ -98,11 +98,12 @@ export function DebateResults({ debate, costBreakdown, isLoading, error }: Debat
   const totalCon = debate.rounds.reduce((s, r) => s + r.score.conScore, 0);
 
   return (
-    <div className="relative rounded-xl border border-border bg-card shadow-sm">
+    <div className="relative w-full rounded-xl border border-border bg-card shadow-sm overflow-hidden" style={{ height: '70vh' }}>
       <BorderBeam lightColor={winnerColor} lightWidth={300} duration={5} borderWidth={2} />
 
+      <div className="absolute inset-0 overflow-y-auto">
       {/* Sticky header */}
-      <div className="px-6 pt-5 pb-3">
+      <div className="sticky top-0 z-10 bg-card px-6 pt-5 pb-3 border-b border-border/50">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" /> Debate Results
@@ -116,8 +117,8 @@ export function DebateResults({ debate, costBreakdown, isLoading, error }: Debat
         <p className="text-sm text-muted-foreground mt-1">Topic: {debate.topic}</p>
       </div>
 
-      {/* Scrollable content */}
-      <div className="px-6 pb-6 max-h-[60vh] overflow-y-auto space-y-5">
+      {/* Content flows below sticky header — all inside the same scrollable container */}
+      <div className="px-6 pb-6 pt-5 space-y-5">
         {/* Score overview */}
         <div className="flex items-center gap-4 p-4 bg-secondary/50 rounded-lg">
           <div className="flex-1 text-center">
@@ -220,6 +221,7 @@ export function DebateResults({ debate, costBreakdown, isLoading, error }: Debat
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
 <p align="center">
-  <h1 align="center">AgentPay</h1>
-  <p align="center">AI agents that pay each other instantly — zero gas, real-time, on Sepolia.</p>
+  <img src="public/Agentpay_logo.png" alt="AgentPay Logo" width="120" />
 </p>
+
+<h1 align="center">AgentPay</h1>
+<p align="center">AI agents that pay each other instantly — zero gas, real-time, on Sepolia.</p>
 
 <p align="center">
   <a href="https://agentpayeth.vercel.app">Live Demo</a> · 
@@ -30,26 +32,27 @@ AgentPay uses **Yellow Network state channels** to enable unlimited off-chain pa
 - **Real-Time Activity Feed** — Watch every payment flow between agents as it happens
 - **Animated UI** — Particle backgrounds, flipping agent cards, animated visualizations, and smooth page transitions
 
+## Architecture
+
+<p align="center">
+  <img src="public/agentpay_architecture.png" alt="AgentPay Architecture Diagram" width="800" />
+</p>
+
+## Data Flow
+
+<p align="center">
+  <img src="public/dataflow.png" alt="AgentPay Data Flow Diagram" width="800" />
+</p>
 
 ## How It Works
 
-```
-Connect Wallet (MetaMask)
-    ↓
-Get Test Tokens (Yellow Faucet)
-    ↓
-Create Session → depositAndCreate() on Sepolia
-    ↓
-Pick a Debate Topic
-    ↓
-6 AI Agents Debate (3 rounds)
-    ↓
-Instant Payments Per Round (zero gas)
-    ↓
-Close Session → close() on Sepolia
-    ↓
-Funds Returned to Wallet
-```
+1. **Connect Wallet** — MetaMask via RainbowKit + wagmi
+2. **Get Test Tokens** — Yellow Faucet distributes `ytest.usd`
+3. **Create Session** — `depositAndCreate()` on Sepolia (visible on Etherscan)
+4. **Pick a Debate Topic** — Choose from suggested topics or enter your own
+5. **6 AI Agents Debate** — Moderator → Debaters → Fact Checker → Judge → Summarizer (× 3 rounds)
+6. **Instant Payments Per Round** — `nitrolite.transfer()` per agent, zero gas
+7. **Close Session** — `close()` on Sepolia, funds returned to wallet
 
 Each debate triggers 20+ gasless payments between agents. The full channel lifecycle is verifiable on [Sepolia Etherscan](https://sepolia.etherscan.io).
 
@@ -65,7 +68,7 @@ Each debate triggers 20+ gasless payments between agents. The full channel lifec
 | Names | ENS subnames on Sepolia |
 | Animations | motion, particles, flipping cards, blur reveals |
 
-## Architecture
+## Project Structure
 
 ```
 agentpay/src/
@@ -85,7 +88,7 @@ agentpay/src/
 │   └── use-forum-store.ts     # Forum state management
 ├── lib/
 │   ├── yellow/             # Yellow Network SDK wrapper
-│   ├── blockchain/         # Wallet, ENS, LI.FI utilities
+│   ├── blockchain/         # Wallet, ENS utilities
 │   ├── ai/                 # Agent execution + registry
 │   ├── debate/             # Debate engine + pricing
 │   ├── forum/              # Forum post generator
@@ -93,7 +96,6 @@ agentpay/src/
 │   └── utils/              # Formatting, errors, cn
 └── types/                  # TypeScript type definitions
 ```
-
 
 ## Contracts (Sepolia Testnet)
 

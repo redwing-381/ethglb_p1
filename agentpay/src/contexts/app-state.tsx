@@ -27,6 +27,7 @@ export interface AppState {
   recordPayment: (amount: number) => void;
 
   // Debate
+  debateTopic: string | null;
   debateResult: DebateTranscript | null;
   costBreakdown: DebateCostBreakdown | null;
   isProcessing: boolean;
@@ -65,6 +66,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [agentEarnings, setAgentEarnings] = useState<AgentEarningsMap>({});
   const [currentRound, setCurrentRound] = useState(0);
   const [activeAgent, setActiveAgent] = useState<DebateAgentType | null>(null);
+  const [debateTopic, setDebateTopic] = useState<string | null>(null);
 
   const handleDebateSubmit = useCallback(async (topic: string) => {
     if (!session.channelId) return;
@@ -75,6 +77,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setCostBreakdown(null);
     setCurrentRound(0);
     setActiveAgent('moderator');
+    setDebateTopic(topic);
 
     addActivityEvent({
       id: `event-${Date.now()}`,
@@ -245,7 +248,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     session, isLoading, error, approvalStatus, lifecycleStatus,
     createSession, closeSession, activityEvents, addActivityEvent, recordPayment,
     debateResult, costBreakdown, isProcessing, debateError,
-    agentEarnings, currentRound, activeAgent, handleDebateSubmit,
+    debateTopic, agentEarnings, currentRound, activeAgent, handleDebateSubmit,
     toasts, showToast, dismissToast,
   };
 

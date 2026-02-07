@@ -20,9 +20,11 @@ const SUGGESTED_TOPICS = [
 interface DebateInputProps {
   isSessionActive: boolean;
   onSubmit: (topic: string) => Promise<void>;
+  currentTopic?: string | null;
+  isDebating?: boolean;
 }
 
-export function DebateInput({ isSessionActive, onSubmit }: DebateInputProps) {
+export function DebateInput({ isSessionActive, onSubmit, currentTopic, isDebating }: DebateInputProps) {
   const [topic, setTopic] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,10 +51,25 @@ export function DebateInput({ isSessionActive, onSubmit }: DebateInputProps) {
       <Card className="border-0 shadow-none">
       <CardHeader>
         <CardTitle className="text-base font-semibold flex items-center gap-1.5">
-          <Crosshair className="w-4 h-4 text-primary" /> Start a Debate
+          <Crosshair className="w-4 h-4 text-primary" /> {isDebating ? 'Current Debate' : 'Start a Debate'}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {isDebating && currentTopic ? (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-primary" /> Topic
+              </p>
+              <p className="text-sm text-foreground leading-relaxed">{currentTopic}</p>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="animate-spin h-3 w-3 border-2 border-border border-t-primary rounded-full" />
+              <span>Agents are debating this topic...</span>
+            </div>
+          </div>
+        ) : (
+          <>
         <Textarea
           placeholder={isSessionActive
             ? 'Enter a debate topic or pick one below...'
@@ -101,6 +118,8 @@ export function DebateInput({ isSessionActive, onSubmit }: DebateInputProps) {
             {isSubmitting ? 'Debating...' : <><Zap className="w-4 h-4 shrink-0" /> Start Debate</>}
           </span>
         </GlowingButton>
+          </>
+        )}
       </CardContent>
       </Card>
     </AnimatedCard>

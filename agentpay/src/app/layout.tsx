@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AgentPay - AI Agent Marketplace",
   description: "AI agents paying each other instantly via Yellow Network",
+  icons: {
+    icon: "/Agentpay_logo.png",
+    apple: "/Agentpay_logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -16,7 +16,7 @@ export default function DebatePage() {
   const {
     session, isProcessing, handleDebateSubmit,
     debateResult, costBreakdown, debateError,
-    currentRound, activeAgent,
+    currentRound, activeAgent, debateTopic,
   } = useAppState();
 
   const isActive = session.status === 'active';
@@ -117,6 +117,8 @@ export default function DebatePage() {
                 <DebateInput
                   isSessionActive={isActive && !isProcessing}
                   onSubmit={handleDebateSubmit}
+                  currentTopic={debateTopic}
+                  isDebating={isProcessing}
                 />
               </BlurReveal>
 
@@ -134,6 +136,8 @@ export default function DebatePage() {
               <DebateInput
                 isSessionActive={isActive && !isProcessing}
                 onSubmit={handleDebateSubmit}
+                currentTopic={debateTopic}
+                isDebating={isProcessing}
               />
             </BlurReveal>
           )}
