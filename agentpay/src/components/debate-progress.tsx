@@ -71,7 +71,7 @@ export function DebateProgress({ currentRound, totalRounds, activeAgent, isActiv
         </div>
 
         {/* Agent pipeline */}
-        <div className="grid grid-cols-6 gap-2">
+        <div className="grid grid-cols-3 gap-3">
           {AGENT_PIPELINE.map((agentType) => {
             const config = DEBATE_AGENT_CONFIGS[agentType];
             const status = getAgentStatus(agentType, activeAgent);
@@ -80,7 +80,7 @@ export function DebateProgress({ currentRound, totalRounds, activeAgent, isActiv
                 key={agentType}
                 animate={status === 'active' ? { scale: [1, 1.03, 1] } : {}}
                 transition={status === 'active' ? { duration: 1.5, repeat: Infinity } : {}}
-                className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition-all duration-300 ${
+                className={`relative flex items-center gap-3 p-3 rounded-lg border transition-all duration-300 ${
                   status === 'active'
                     ? 'bg-blue-500/15 border-blue-500/40 shadow-sm shadow-blue-500/10'
                     : status === 'done'
@@ -88,7 +88,7 @@ export function DebateProgress({ currentRound, totalRounds, activeAgent, isActiv
                     : 'bg-secondary/30 border-border/30'
                 }`}
               >
-                <div className={`p-1.5 rounded-md transition-colors ${
+                <div className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${
                   status === 'active' ? 'bg-blue-500/20 text-blue-400'
                   : status === 'done' ? 'bg-green-500/20 text-green-400'
                   : 'bg-secondary text-muted-foreground'
@@ -101,7 +101,7 @@ export function DebateProgress({ currentRound, totalRounds, activeAgent, isActiv
                     <AgentIcon icon={config.icon} className="w-4 h-4" />
                   )}
                 </div>
-                <span className={`text-[10px] font-medium text-center leading-tight ${
+                <span className={`text-xs font-medium leading-tight ${
                   status === 'active' ? 'text-blue-300'
                   : status === 'done' ? 'text-green-400'
                   : 'text-muted-foreground'

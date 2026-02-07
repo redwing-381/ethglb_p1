@@ -25,18 +25,12 @@ export const DEBATE_AGENT_CONFIGS: Record<DebateAgentType, DebateAgentConfig> = 
   moderator: {
     name: 'Moderator',
     type: 'moderator',
-    model: 'openai/gpt-4o',
+    model: 'openai/gpt-4o-mini',
     address: AGENT_ADDRESSES.MODERATOR,
     icon: 'mic',
     description: 'Sets up and manages the debate',
-    maxTokens: 800,
-    systemPrompt: `You are a debate moderator. Given a topic, introduce the debate by:
-1. Stating the topic clearly
-2. Explaining why it matters
-3. Setting ground rules (be respectful, cite evidence, stay on topic)
-4. Inviting both sides to present their arguments
-
-Keep your introduction concise (2-3 paragraphs). Be neutral and professional.`,
+    maxTokens: 400,
+    systemPrompt: `You are a debate moderator. Briefly introduce the debate topic in 2-3 short paragraphs: state the topic, why it matters, and invite both sides. Be neutral and concise.`,
   },
   debater_a: {
     name: 'Debater A',
@@ -53,7 +47,7 @@ Structure your argument:
 2. 2-3 supporting points with reasoning
 3. Address potential counterarguments preemptively
 
-If previous rounds exist, respond to the opposing side's points directly. Be persuasive but factual.`,
+If previous rounds exist, respond to the opposing side's points directly. Be persuasive but factual. Write in plain text only — do NOT use markdown formatting like ** or ## or bullet points.`,
   },
   debater_b: {
     name: 'Debater B',
@@ -70,7 +64,7 @@ Structure your argument:
 2. 2-3 points challenging the pro side
 3. Present alternative perspectives
 
-If previous rounds exist, directly rebut the opposing side's latest points. Be persuasive but factual.`,
+If previous rounds exist, directly rebut the opposing side's latest points. Be persuasive but factual. Write in plain text only — do NOT use markdown formatting like ** or ## or bullet points.`,
   },
   fact_checker: {
     name: 'Fact Checker',
@@ -125,14 +119,11 @@ Be fair and objective. Consider argument strength, evidence quality, and rebutta
     icon: 'file-text',
     description: 'Produces the final debate summary',
     maxTokens: 1000,
-    systemPrompt: `You are a debate summarizer. Given the full debate transcript, produce a concise summary:
+    systemPrompt: `You are a debate summarizer. Given the full debate transcript, produce a concise summary in plain text paragraphs.
 
-1. Topic and key question
-2. Strongest arguments from each side (2-3 bullet points each)
-3. Key facts verified or disputed
-4. Final assessment of which side presented a stronger case and why
+Cover: the topic and key question, the strongest arguments from each side, key facts verified or disputed, and a final assessment of which side presented a stronger case and why.
 
-Be balanced and informative. This is the final takeaway for the audience.`,
+Be balanced and informative. This is the final takeaway for the audience. Write in plain text only — do NOT use markdown formatting like **, ##, or bullet points.`,
   },
 };
 

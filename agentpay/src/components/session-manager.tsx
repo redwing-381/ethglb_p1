@@ -317,21 +317,6 @@ export function SessionManager({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="relative p-4 bg-secondary/50 rounded-lg overflow-hidden">
-              {isActive && <BorderBeam lightColor="#10B981" lightWidth={200} duration={6} borderWidth={1} />}
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-muted-foreground">Session Balance</span>
-                <span className="text-xl font-bold tabular-nums">{formatUSDC(session.balance)}</span>
-              </div>
-              <div className="w-full bg-border rounded-full h-2 mb-2">
-                <div className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.max(0, Math.min(100, percentRemaining))}%` }} />
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Spent: {totalSpent.toFixed(2)} USDC</span>
-                <span>{percentRemaining.toFixed(0)}% remaining</span>
-              </div>
-            </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-secondary/30 rounded-lg">
                 <p className="text-muted-foreground mb-1">Channel ID</p>
