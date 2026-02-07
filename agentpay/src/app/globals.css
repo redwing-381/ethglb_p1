@@ -123,3 +123,82 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Marquee animations */
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-right {
+  from {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Infinite Ribbon animations */
+@keyframes infinite-ribbon {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes infinite-ribbon-reverse {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Star Button animation */
+@keyframes star-btn {
+  0% {
+    offset-distance: 0%;
+  }
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+/* Swipe Button text shimmer */
+@keyframes swipe-button-text {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@layer utilities {
+  .animate-marquee-left {
+    animation: marquee-left var(--duration, 60s) linear infinite;
+  }
+  .animate-marquee-right {
+    animation: marquee-right var(--duration, 60s) linear infinite;
+  }
+  .animate-infinite-ribbon {
+    animation: infinite-ribbon var(--ribbon-duration, 10s) linear infinite;
+  }
+  .animate-infinite-ribbon-reverse {
+    animation: infinite-ribbon-reverse var(--ribbon-duration, 10s) linear infinite;
+  }
+  .animate-star-btn {
+    animation: star-btn calc(var(--duration, 3) * 1s) linear infinite;
+  }
+  .animate-swipe-button-text {
+    animation: swipe-button-text 2s cubic-bezier(.4,0,.2,1) infinite;
+  }
+}

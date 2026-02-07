@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig, http } from 'wagmi';
-import { base, baseSepolia, polygon, polygonAmoy, sepolia } from 'wagmi/chains';
+import { base, baseSepolia, mainnet, polygon, polygonAmoy, sepolia } from 'wagmi/chains';
 import { RainbowKitProvider, getDefaultConfig } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
 import { useState, type ReactNode } from 'react';
@@ -11,7 +11,8 @@ const config = getDefaultConfig({
   appName: 'AgentPay',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo',
   // Sepolia is required for Yellow Network testnet integration
-  chains: [sepolia, base, baseSepolia, polygon, polygonAmoy],
+  // Mainnet is needed for ENS name resolution
+  chains: [sepolia, mainnet, base, baseSepolia, polygon, polygonAmoy],
   ssr: true,
 });
 

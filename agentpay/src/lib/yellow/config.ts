@@ -185,7 +185,7 @@ export const AGENT_FALLBACK_CONFIG: Record<DebateAgentType | 'platform', {
     description: 'AI Moderator - Sets up and manages debates',
     model: 'anthropic/claude-3-sonnet',
     basePrice: '0.01',
-    icon: '🎙️',
+    icon: 'mic',
   },
   debater_a: {
     address: AGENT_ADDRESSES.DEBATER_A,
@@ -193,7 +193,7 @@ export const AGENT_FALLBACK_CONFIG: Record<DebateAgentType | 'platform', {
     description: 'AI Debater - Argues FOR the topic',
     model: 'anthropic/claude-3-sonnet',
     basePrice: '0.02',
-    icon: '🔵',
+    icon: 'shield',
   },
   debater_b: {
     address: AGENT_ADDRESSES.DEBATER_B,
@@ -201,7 +201,7 @@ export const AGENT_FALLBACK_CONFIG: Record<DebateAgentType | 'platform', {
     description: 'AI Debater - Argues AGAINST the topic',
     model: 'openai/gpt-4-turbo',
     basePrice: '0.02',
-    icon: '🔴',
+    icon: 'sword',
   },
   fact_checker: {
     address: AGENT_ADDRESSES.FACT_CHECKER,
@@ -209,7 +209,7 @@ export const AGENT_FALLBACK_CONFIG: Record<DebateAgentType | 'platform', {
     description: 'AI Fact Checker - Verifies claims from both sides',
     model: 'anthropic/claude-3-sonnet',
     basePrice: '0.015',
-    icon: '🔍',
+    icon: 'search',
   },
   judge: {
     address: AGENT_ADDRESSES.JUDGE,
@@ -217,7 +217,7 @@ export const AGENT_FALLBACK_CONFIG: Record<DebateAgentType | 'platform', {
     description: 'AI Judge - Scores rounds and delivers verdict',
     model: 'openai/gpt-4-turbo',
     basePrice: '0.015',
-    icon: '⚖️',
+    icon: 'scale',
   },
   summarizer: {
     address: AGENT_ADDRESSES.SUMMARIZER,
@@ -225,7 +225,7 @@ export const AGENT_FALLBACK_CONFIG: Record<DebateAgentType | 'platform', {
     description: 'AI Summarizer - Produces the final debate summary',
     model: 'anthropic/claude-3-sonnet',
     basePrice: '0.02',
-    icon: '📝',
+    icon: 'file-text',
   },
   platform: {
     address: PLATFORM_CONFIG.FEE_ADDRESS,
@@ -233,6 +233,6 @@ export const AGENT_FALLBACK_CONFIG: Record<DebateAgentType | 'platform', {
     description: 'Platform fee collection',
     model: 'n/a',
     basePrice: '0',
-    icon: '🏦',
+    icon: 'landmark',
   },
 };

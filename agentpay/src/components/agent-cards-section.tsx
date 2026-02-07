@@ -3,12 +3,15 @@
  * 
  * Displays all debate agents resolved from ENS registry on Sepolia.
  * Highlights the active agent with a BorderBeam glow during debates.
+ * Uses responsive grid and AnimatedList for smooth entry animations.
  */
 
 'use client';
 
 import { AgentCard } from './agent-card';
 import { useEnsAgentRegistry } from '@/hooks/use-ens-agent-registry';
+import { AnimatedList } from '@/components/ui/animated-list';
+import { BlurReveal } from '@/components/ui/blur-reveal';
 import type { DebateAgentType } from '@/lib/yellow';
 
 interface AgentCardsSectionProps {
@@ -23,8 +26,10 @@ export function AgentCardsSection({ activeAgent }: AgentCardsSectionProps) {
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-gray-700 mb-3">Debate Agents</h3>
-      <div className="space-y-2">
+      <BlurReveal delay={0.2}>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">Debate Agents</h3>
+      </BlurReveal>
+      <AnimatedList className="flex flex-wrap justify-center gap-5">
         {debateAgents.map((agent) => (
           <AgentCard
             key={agent.ensName}
@@ -33,7 +38,7 @@ export function AgentCardsSection({ activeAgent }: AgentCardsSectionProps) {
             isActive={activeAgent === agent.agentType}
           />
         ))}
-      </div>
+      </AnimatedList>
     </div>
   );
 }

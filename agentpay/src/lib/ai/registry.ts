@@ -21,37 +21,37 @@ const AGENTS: Record<DebateAgentType, AgentInfo> = {
     address: getAgentAddress('moderator'),
     name: 'Moderator',
     description: 'Sets up and manages the debate',
-    icon: '🎙️',
+    icon: 'mic',
   },
   debater_a: {
     address: getAgentAddress('debater_a'),
     name: 'Debater A',
     description: 'Argues FOR the topic',
-    icon: '🔵',
+    icon: 'shield',
   },
   debater_b: {
     address: getAgentAddress('debater_b'),
     name: 'Debater B',
     description: 'Argues AGAINST the topic',
-    icon: '🔴',
+    icon: 'sword',
   },
   fact_checker: {
     address: getAgentAddress('fact_checker'),
     name: 'Fact Checker',
     description: 'Verifies claims from both sides',
-    icon: '🔍',
+    icon: 'search',
   },
   judge: {
     address: getAgentAddress('judge'),
     name: 'Judge',
     description: 'Scores rounds and delivers verdict',
-    icon: '⚖️',
+    icon: 'scale',
   },
   summarizer: {
     address: getAgentAddress('summarizer'),
     name: 'Summarizer',
     description: 'Produces the final debate summary',
-    icon: '📝',
+    icon: 'file-text',
   },
 };
 

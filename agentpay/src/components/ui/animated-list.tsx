@@ -16,7 +16,7 @@ interface AnimatedListProps {
  */
 export function AnimatedList({ children, className }: AnimatedListProps) {
   return (
-    <div className={cn("flex flex-col", className)}>
+    <div className={cn("flex", className)}>
       <AnimatePresence initial={false}>
         {React.Children.map(children, (child) => {
           if (!React.isValidElement(child)) return child
@@ -31,6 +31,7 @@ export function AnimatedList({ children, className }: AnimatedListProps) {
                 ease: [0.4, 0, 0.2, 1],
               }}
               layout
+              className="flex-shrink-0"
             >
               {child}
             </motion.div>

@@ -130,39 +130,37 @@ export function useYellowSession(): UseYellowSessionReturn {
   
   const clientRef = useRef<YellowClient | null>(null);
 
-  // Initialize client on mount
-  useEffect(() => {
-    const client = getYellowClient({
-      onStatusChange: (status) => {
-        setConnectionStatus(status);
-      },
-      onSessionStatusChange: (status) => {
-        setSession(prev => ({ ...prev, status: mapSessionStatus(status) }));
-      },
-      onBalanceUpdate: (balance) => {
-        setSession(prev => ({ ...prev, balance }));
-      },
-      onError: (err) => {
-        setError(err.message);
-      },
-    });
-    
-    clientRef.current = client;
-    
-    // Connect to clearnode
-    client.connect()
-      .then(() => {
-        console.log('✅ Connected to Yellow clearnode');
-      })
-      .catch(err => {
-        console.error('❌ Failed to connect to Yellow clearnode:', err);
-        setError('Failed to connect to Yellow Network');
+  // Initialize client lazily — don't connect WebSocket until needed
+  const getClient = useCallback(() => {
+    if (!clientRef.current) {
+      const client = getYellowClient({
+        onStatusChange: (status) => {
+          setConnectionStatus(status);
+        },
+        onSessionStatusChange: (status) => {
+          setSession(prev => ({ ...prev, status: mapSessionStatus(status) }));
+        },
+        onBalanceUpdate: (balance) => {
+          setSession(prev => ({ ...prev, balance }));
+        },
+        onError: (err) => {
+          setError(err.message);
+        },
       });
-
-    return () => {
-      // Don't disconnect on unmount - keep connection alive
-    };
+      clientRef.current = client;
+    }
+    return clientRef.current;
   }, []);
+
+  // Connect lazily — only when user triggers an action
+  const ensureConnected = useCallback(async () => {
+    const client = getClient();
+    if (!client.isConnected()) {
+      await client.connect();
+      console.log('✅ Connected to Yellow clearnode');
+    }
+    return client;
+  }, [getClient]);
 
   const addActivityEvent = useCallback((event: ActivityEvent) => {
     setActivityEvents(prev => [event, ...prev]);
@@ -191,8 +189,6 @@ export function useYellowSession(): UseYellowSessionReturn {
     budgetAmount: string,
     walletFunctions: WalletFunctions
   ) => {
-    const client = clientRef.current;
-    
     // Validate wallet connection
     if (!walletFunctions.walletAddress) {
       const walletError = createWalletError('WALLET_NOT_CONNECTED');
@@ -206,6 +202,9 @@ export function useYellowSession(): UseYellowSessionReturn {
     setLifecycleStatus({ stage: 'connecting' });
 
     try {
+      // Ensure connected before proceeding
+      const client = await ensureConnected();
+      
       // Check if we have a wallet client for on-chain mode
       const hasWalletClient = !!walletFunctions.walletClient;
       
@@ -336,16 +335,12 @@ export function useYellowSession(): UseYellowSessionReturn {
         // ============================================================
         console.log('⚡ Using UNIFIED BALANCE MODE (gasless)');
         
-        // Ensure we're connected to clearnode
-        if (!client?.isConnected()) {
-          console.log('🔄 Reconnecting to clearnode...');
-          await client?.connect();
-        }
+        // Client is already connected via ensureConnected() above
 
         // Step 1: Authenticate with Yellow Network
         setLifecycleStatus({ stage: 'authenticating', message: 'Authenticating with Yellow Network...' });
         console.log('🔐 Authenticating with Yellow Network...');
-        await client!.authenticate({
+        await client.authenticate({
           walletAddress: walletFunctions.walletAddress,
           signTypedData: walletFunctions.signTypedData,
         });
@@ -357,7 +352,7 @@ export function useYellowSession(): UseYellowSessionReturn {
         setLifecycleStatus({ stage: 'checking_channels', message: 'Checking unified balance...' });
         
         console.log('🔍 Checking Yellow unified balance...');
-        const unifiedBalance = await client!.queryBalance();
+        const unifiedBalance = await client.queryBalance();
         const unifiedBalanceNum = parseFloat(unifiedBalance);
         const requiredAmount = parseFloat(budgetAmount);
         
@@ -428,7 +423,7 @@ export function useYellowSession(): UseYellowSessionReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [addActivityEvent]);
+  }, [addActivityEvent, ensureConnected]);
 
   /**
    * Close the Yellow session.
@@ -620,16 +615,11 @@ export function useYellowSession(): UseYellowSessionReturn {
   const executeFullLifecycle = useCallback(async (
     agentPayments: Array<{ address: `0x${string}`; amount: string }>
   ): Promise<Array<{ address: string; txId: number }>> => {
-    const client = clientRef.current;
-    
-    if (!client) {
-      throw new Error('Yellow client not initialized');
-    }
-    
     setIsLoading(true);
     setError(null);
     
     try {
+      const client = await ensureConnected();
       // Add activity event for lifecycle start
       addActivityEvent({
         id: `evt_lifecycle_start_${Date.now()}`,
@@ -687,7 +677,7 @@ export function useYellowSession(): UseYellowSessionReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [addActivityEvent]);
+  }, [addActivityEvent, ensureConnected]);
 
   return {
     session,

@@ -27,7 +27,7 @@ export function ProgressTracker({
   return (
     <div className={cn('space-y-2', className)}>
       {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
         <div
           className={cn(
             'h-2 rounded-full transition-all duration-300',
@@ -39,7 +39,7 @@ export function ProgressTracker({
 
       {/* Status text */}
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600">
+        <span className="text-muted-foreground">
           {isComplete ? (
             <span className="text-green-600 flex items-center gap-1 font-medium">
               <svg
@@ -63,7 +63,7 @@ export function ProgressTracker({
         </span>
 
         {currentAgent && !isComplete && (
-          <span className="text-gray-500 flex items-center gap-1">
+          <span className="text-muted-foreground flex items-center gap-1">
             <LoadingSpinner size="sm" className="text-blue-500" />
             {currentAgent}
           </span>

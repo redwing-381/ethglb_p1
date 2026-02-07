@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/index"
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -11,7 +11,7 @@ export function AnimatedCard({ className, ...props }: CardProps) {
       aria-labelledby="card-title"
       aria-describedby="card-description"
       className={cn(
-        "group/animated-card relative overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-900 dark:bg-black",
+        "group/animated-card relative overflow-hidden rounded-xl border border-border bg-card shadow-sm",
         className
       )}
       {...props}
@@ -24,7 +24,7 @@ export function CardBody({ className, ...props }: CardProps) {
     <div
       role="group"
       className={cn(
-        "flex flex-col space-y-1.5 p-4",
+        "flex flex-col space-y-1.5 border-t border-border p-4",
         className
       )}
       {...props}
@@ -38,7 +38,7 @@ export function CardTitle({ className, ...props }: CardTitleProps) {
   return (
     <h3
       className={cn(
-        "text-lg leading-none font-semibold tracking-tight text-black dark:text-white",
+        "text-lg leading-none font-semibold tracking-tight text-foreground",
         className
       )}
       {...props}
@@ -53,7 +53,7 @@ export function CardDescription({ className, ...props }: CardDescriptionProps) {
   return (
     <p
       className={cn(
-        "text-sm text-neutral-500 dark:text-neutral-400",
+        "text-sm text-muted-foreground",
         className
       )}
       {...props}
@@ -64,7 +64,7 @@ export function CardDescription({ className, ...props }: CardDescriptionProps) {
 export function CardVisual({ className, ...props }: CardProps) {
   return (
     <div
-      className={cn("overflow-hidden", className)}
+      className={cn("h-[180px] overflow-hidden", className)}
       {...props}
     />
   )

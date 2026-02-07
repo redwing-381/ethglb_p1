@@ -2,15 +2,19 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnimatedCard } from '@/components/ui/animated-card';
 import { GlowingButton } from '@/components/ui/glowing-button';
 import { ShuffleButton } from '@/components/ui/shuffle-button';
 import { Textarea } from '@/components/ui/textarea';
+import { Crosshair, Zap, Sparkles } from 'lucide-react';
 
 const SUGGESTED_TOPICS = [
   'Should AI have legal personhood?',
   'Is universal basic income inevitable?',
   'Should social media be regulated like utilities?',
   'Will remote work replace offices permanently?',
+  'Is blockchain the future of finance?',
+  'Should autonomous AI agents have wallets?',
 ];
 
 interface DebateInputProps {
@@ -41,14 +45,17 @@ export function DebateInput({ isSessionActive, onSubmit }: DebateInputProps) {
   };
 
   return (
-    <Card>
+    <AnimatedCard>
+      <Card className="border-0 shadow-none">
       <CardHeader>
-        <CardTitle className="text-base font-semibold">🎯 Start a Debate</CardTitle>
+        <CardTitle className="text-base font-semibold flex items-center gap-1.5">
+          <Crosshair className="w-4 h-4 text-primary" /> Start a Debate
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <Textarea
           placeholder={isSessionActive
-            ? 'Enter a debate topic...'
+            ? 'Enter a debate topic or pick one below...'
             : 'Create a session first'}
           value={topic}
           onChange={(e) => { setTopic(e.target.value); if (error) setError(null); }}
@@ -57,19 +64,28 @@ export function DebateInput({ isSessionActive, onSubmit }: DebateInputProps) {
           className="resize-none text-sm"
         />
 
-        {/* Suggested topics */}
-        {isSessionActive && !topic && (
-          <div className="flex flex-wrap gap-1.5">
-            {SUGGESTED_TOPICS.map((t) => (
-              <ShuffleButton
-                key={t}
-                onClick={() => setTopic(t)}
-                duration={0.6}
-                className="h-auto px-2.5 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full"
-              >
-                {t}
-              </ShuffleButton>
-            ))}
+        {/* Quick topic picks */}
+        {isSessionActive && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Quick topics
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {SUGGESTED_TOPICS.map((t) => (
+                <ShuffleButton
+                  key={t}
+                  onClick={() => setTopic(t)}
+                  duration={0.6}
+                  className={`h-auto px-2.5 py-1 text-xs rounded-full transition-colors ${
+                    topic === t
+                      ? 'bg-primary/20 text-primary border border-primary/30'
+                      : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'
+                  }`}
+                >
+                  {t}
+                </ShuffleButton>
+              ))}
+            </div>
           </div>
         )}
 
@@ -79,11 +95,14 @@ export function DebateInput({ isSessionActive, onSubmit }: DebateInputProps) {
           onClick={handleSubmit}
           disabled={!isSessionActive || isSubmitting || !topic.trim()}
           glowColor="#8B5CF6"
-          className="w-full"
+          className="w-full whitespace-nowrap"
         >
-          {isSubmitting ? 'Debating...' : '⚡ Start Debate'}
+          <span className="inline-flex items-center gap-1.5">
+            {isSubmitting ? 'Debating...' : <><Zap className="w-4 h-4 shrink-0" /> Start Debate</>}
+          </span>
         </GlowingButton>
       </CardContent>
-    </Card>
+      </Card>
+    </AnimatedCard>
   );
 }

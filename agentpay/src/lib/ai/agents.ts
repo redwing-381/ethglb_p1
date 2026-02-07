@@ -27,7 +27,7 @@ export const DEBATE_AGENT_CONFIGS: Record<DebateAgentType, DebateAgentConfig> = 
     type: 'moderator',
     model: 'openai/gpt-4o',
     address: AGENT_ADDRESSES.MODERATOR,
-    icon: '🎙️',
+    icon: 'mic',
     description: 'Sets up and manages the debate',
     maxTokens: 800,
     systemPrompt: `You are a debate moderator. Given a topic, introduce the debate by:
@@ -43,7 +43,7 @@ Keep your introduction concise (2-3 paragraphs). Be neutral and professional.`,
     type: 'debater_a',
     model: 'openai/gpt-4o',
     address: AGENT_ADDRESSES.DEBATER_A,
-    icon: '🔵',
+    icon: 'shield',
     description: 'Argues FOR the topic',
     maxTokens: 1200,
     systemPrompt: `You are Debater A, arguing FOR the given topic. Build strong, evidence-based arguments.
@@ -60,7 +60,7 @@ If previous rounds exist, respond to the opposing side's points directly. Be per
     type: 'debater_b',
     model: 'openai/gpt-4o',
     address: AGENT_ADDRESSES.DEBATER_B,
-    icon: '🔴',
+    icon: 'sword',
     description: 'Argues AGAINST the topic',
     maxTokens: 1200,
     systemPrompt: `You are Debater B, arguing AGAINST the given topic. Build strong, evidence-based counter-arguments.
@@ -77,7 +77,7 @@ If previous rounds exist, directly rebut the opposing side's latest points. Be p
     type: 'fact_checker',
     model: 'openai/gpt-4o-mini',
     address: AGENT_ADDRESSES.FACT_CHECKER,
-    icon: '🔍',
+    icon: 'search',
     description: 'Verifies claims from both sides',
     maxTokens: 1000,
     systemPrompt: `You are a fact checker. Analyze claims made by both debaters in the current round.
@@ -102,7 +102,7 @@ Check 2-4 key claims per round. Be fair to both sides.`,
     type: 'judge',
     model: 'openai/gpt-4o',
     address: AGENT_ADDRESSES.JUDGE,
-    icon: '⚖️',
+    icon: 'scale',
     description: 'Scores rounds and delivers verdict',
     maxTokens: 800,
     systemPrompt: `You are the debate judge. Score the current round based on argument quality, evidence, and persuasiveness.
@@ -122,7 +122,7 @@ Be fair and objective. Consider argument strength, evidence quality, and rebutta
     type: 'summarizer',
     model: 'openai/gpt-4o-mini',
     address: AGENT_ADDRESSES.SUMMARIZER,
-    icon: '📝',
+    icon: 'file-text',
     description: 'Produces the final debate summary',
     maxTokens: 1000,
     systemPrompt: `You are a debate summarizer. Given the full debate transcript, produce a concise summary:

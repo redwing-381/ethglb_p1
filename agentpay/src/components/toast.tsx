@@ -42,24 +42,24 @@ interface ToastItemProps {
 
 function ToastItem({ toast, onDismiss }: ToastItemProps) {
   const typeStyles = {
-    success: 'bg-green-50 border-green-200 text-green-900',
-    error: 'bg-red-50 border-red-200 text-red-900',
-    info: 'bg-blue-50 border-blue-200 text-blue-900',
-    warning: 'bg-yellow-50 border-yellow-200 text-yellow-900',
+    success: 'bg-green-500/10 border-green-500/20 text-green-300',
+    error: 'bg-red-500/10 border-red-500/20 text-red-300',
+    info: 'bg-blue-500/10 border-blue-500/20 text-blue-300',
+    warning: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300',
   };
 
   const iconStyles = {
-    success: 'text-green-600',
-    error: 'text-red-600',
-    info: 'text-blue-600',
-    warning: 'text-yellow-600',
+    success: 'text-green-400',
+    error: 'text-red-400',
+    info: 'text-blue-400',
+    warning: 'text-yellow-400',
   };
 
   return (
     <div
       className={cn(
         'flex items-start gap-3 p-3 rounded-lg border shadow-lg',
-        'pointer-events-auto',
+        'pointer-events-auto backdrop-blur-xl',
         'min-w-[300px] max-w-md',
         typeStyles[toast.type]
       )}
@@ -93,7 +93,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
 
       <button
         onClick={() => onDismiss(toast.id)}
-        className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+        className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

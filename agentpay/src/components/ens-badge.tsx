@@ -15,7 +15,7 @@ export function EnsBadge({ className }: EnsBadgeProps) {
     <span
       className={cn(
         'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
-        'bg-blue-100 text-blue-700 text-xs font-medium',
+        'bg-blue-500/15 text-blue-400 text-xs font-medium',
         className
       )}
     >
