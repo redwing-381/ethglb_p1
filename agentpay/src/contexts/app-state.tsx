@@ -83,6 +83,29 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       data: { taskId: session.channelId, description: `Debate: ${topic}` },
     });
 
+    // Simulate progressive agent updates while API runs
+    // The debate pipeline: moderator → (debater_a → debater_b → fact_checker → judge) × rounds → judge verdict → summarizer
+    // With 3 rounds that's ~14 steps. We cycle through them on a timer so the UI feels alive.
+    const agentSequence: { agent: DebateAgentType; round: number }[] = [
+      { agent: 'moderator', round: 0 },
+      { agent: 'debater_a', round: 1 }, { agent: 'debater_b', round: 1 },
+      { agent: 'fact_checker', round: 1 }, { agent: 'judge', round: 1 },
+      { agent: 'debater_a', round: 2 }, { agent: 'debater_b', round: 2 },
+      { agent: 'fact_checker', round: 2 }, { agent: 'judge', round: 2 },
+      { agent: 'debater_a', round: 3 }, { agent: 'debater_b', round: 3 },
+      { agent: 'fact_checker', round: 3 }, { agent: 'judge', round: 3 },
+      { agent: 'summarizer', round: 0 },
+    ];
+    let stepIdx = 0;
+    const progressTimer = setInterval(() => {
+      stepIdx++;
+      if (stepIdx < agentSequence.length) {
+        const { agent, round } = agentSequence[stepIdx];
+        setActiveAgent(agent);
+        if (round > 0) setCurrentRound(round);
+      }
+    }, 12000); // ~12s per step, total ~168s for 14 steps ≈ realistic AI timing
+
     try {
       const nitroliteClient = getNitroliteClient();
 
@@ -96,8 +119,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }),
       });
 
+      // Stop simulated progress — real data is here
+      clearInterval(progressTimer);
+
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Debate failed');
+
+      // Now cycle through agents quickly during payment settlement
+      // This shows the "payment" phase visually
 
       // Execute Yellow transfers
       if (data.payments?.length > 0 && nitroliteClient.isAuthenticated()) {
@@ -197,6 +226,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setCostBreakdown(data.costBreakdown);
       showToast('success', 'Debate completed!');
     } catch (err) {
+      clearInterval(progressTimer);
       const msg = getErrorMessage(err);
       setDebateError(msg);
       addActivityEvent({

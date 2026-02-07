@@ -9,12 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Crosshair, Zap, Sparkles } from 'lucide-react';
 
 const SUGGESTED_TOPICS = [
-  'Should AI have legal personhood?',
-  'Is universal basic income inevitable?',
-  'Should social media be regulated like utilities?',
-  'Will remote work replace offices permanently?',
-  'Is blockchain the future of finance?',
-  'Should autonomous AI agents have wallets?',
+  'Are state channels like Yellow Network superior to rollups for micropayments?',
+  'Should ENS names replace wallet addresses as the standard for Web3 identity?',
+  'Will off-chain payment channels make on-chain transactions obsolete?',
+  'Is decentralized naming (ENS) more important than decentralized finance?',
+  'Should AI agents have their own ENS identities and crypto wallets?',
+  'Are gasless state channel payments the key to mainstream crypto adoption?',
 ];
 
 interface DebateInputProps {

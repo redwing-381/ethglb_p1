@@ -11,7 +11,7 @@ export function AnimatedCard({ className, ...props }: CardProps) {
       aria-labelledby="card-title"
       aria-describedby="card-description"
       className={cn(
-        "group/animated-card relative overflow-hidden rounded-xl border border-border bg-card shadow-sm",
+        "group/animated-card relative overflow-clip rounded-xl border border-border bg-card shadow-sm",
         className
       )}
       {...props}
