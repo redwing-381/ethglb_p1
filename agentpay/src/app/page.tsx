@@ -10,10 +10,11 @@ import { AgentCardsSection } from '@/components/agent-cards-section';
 import { ToastContainer } from '@/components/toast';
 import { useYellowSession } from '@/hooks/use-yellow-session';
 import { useToast } from '@/hooks/use-toast';
-import { getYellowClient, debugYellowClientState } from '@/lib/yellow';
+import { getNitroliteClient, getPlatformAddress, PLATFORM_CONFIG } from '@/lib/yellow';
 import { getAgentAddress } from '@/lib/yellow';
 import { AGENT_CONFIGS } from '@/lib/ai';
 import { getErrorMessage } from '@/lib/utils';
+import type { CostBreakdown } from '@/lib/payment';
 import { 
   useAccount, 
   useSignTypedData, 
@@ -22,16 +23,17 @@ import {
   useSignMessage,
   useSwitchChain,
   useChainId,
-  useReadContract,
   useWalletClient,
 } from 'wagmi';
-import type { ActivityEvent } from '@/types';
+
+import { AgentEarnings, type AgentEarningsMap } from '@/components/agent-earnings';
 
 interface TaskResult {
   content: string;
   totalCost: string;
   agentsUsed: string[];
   subTaskCount: number;
+  costBreakdown?: CostBreakdown;
 }
 
 export default function Home() {
@@ -62,6 +64,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [taskError, setTaskError] = useState<string | null>(null);
   const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
+  const [agentEarnings, setAgentEarnings] = useState<AgentEarningsMap>({});
 
   // Use the transaction receipt hook for waiting
   const { isLoading: isWaitingForTx } = useWaitForTransactionReceipt({
@@ -199,11 +202,8 @@ export default function Home() {
     });
 
     try {
-      // Get the Yellow client (authenticated on client side)
-      const yellowClient = getYellowClient();
-      
-      // Debug: Check client state
-      debugYellowClientState();
+      // Get the Nitrolite client (authenticated during session creation)
+      const nitroliteClient = getNitroliteClient();
       
       const response = await fetch('/api/task', {
         method: 'POST',
@@ -223,85 +223,167 @@ export default function Home() {
 
       console.log('📦 API Response:', JSON.stringify(data, null, 2));
 
-      // Execute Yellow transfers from the client side (where we're authenticated)
-      // This is the key fix - the client has the authenticated session
-      console.log('🔍 Checking Yellow client authentication status...');
-      console.log('🔍 isAuthenticated:', yellowClient.isAuthenticated());
+      // Execute Yellow transfers using NitroliteSDKClient (has the correct session key)
+      console.log('🔍 Checking Nitrolite client authentication status...');
+      console.log('🔍 isAuthenticated:', nitroliteClient.isAuthenticated());
       console.log('🔍 payments array:', data.payments);
       console.log('🔍 payments length:', data.payments?.length);
       
       if (data.payments && data.payments.length > 0) {
-        if (yellowClient.isAuthenticated()) {
-          console.log('💸 Executing Yellow transfers from client...');
+        if (nitroliteClient.isAuthenticated()) {
+          console.log('💸 Executing Yellow transfers via NitroliteSDKClient...');
+          let allPaymentsSuccessful = true;
+          
           for (const payment of data.payments) {
-            try {
-              // Find the agent type from the payment destination
-              const agentTypes = ['orchestrator', 'researcher', 'writer'] as const;
-              const agentType = agentTypes.find(type => 
-                getAgentAddress(type).toLowerCase() === payment.to.toLowerCase()
-              );
-              
-              if (agentType) {
-                const config = AGENT_CONFIGS[agentType];
-                console.log(`💸 Paying ${config.name} (${payment.to}) ${payment.amount} USDC...`);
+            // Check if this is a platform fee payment
+            const isPlatformFee = payment.to.toLowerCase() === getPlatformAddress().toLowerCase();
+            
+            if (isPlatformFee) {
+              console.log(`💸 Paying platform fee: ${payment.amount} USDC...`);
+              try {
+                const result = await nitroliteClient.transfer(payment.to as `0x${string}`, payment.amount);
+                console.log(`✅ Platform fee transfer complete. TX ID: ${result.transactionId}`);
                 
-                // Try real Yellow transfer first
-                try {
-                  const result = await yellowClient.transfer(payment.to as `0x${string}`, payment.amount);
-                  console.log(`✅ Real transfer complete. TX ID: ${result.transactionId}`);
-                  
-                  // Add real payment event
-                  addActivityEvent({
-                    id: `event-payment-${result.transactionId}`,
-                    type: 'payment',
-                    timestamp: Date.now(),
-                    data: {
-                      from: 'You',
-                      to: config.name,
-                      amount: payment.amount,
-                      asset: 'USDC',
-                      transactionId: result.transactionId,
-                    },
-                  });
-                } catch (transferError) {
-                  // If real transfer fails (e.g., insufficient funds on Yellow), 
-                  // fall back to demo mode for hackathon
-                  const errorMsg = transferError instanceof Error ? transferError.message : 'Unknown error';
-                  console.warn(`⚠️ Real transfer failed: ${errorMsg}`);
-                  console.log(`📋 Using demo mode for ${config.name} payment`);
-                  
-                  // Generate a demo transaction ID
-                  const demoTxId = Date.now() + Math.floor(Math.random() * 1000);
-                  
-                  // Add demo payment event (still shows in activity feed)
-                  addActivityEvent({
-                    id: `event-payment-demo-${demoTxId}`,
-                    type: 'payment',
-                    timestamp: Date.now(),
-                    data: {
-                      from: 'You',
-                      to: config.name,
-                      amount: payment.amount,
-                      asset: 'USDC',
-                      transactionId: demoTxId,
-                    },
-                  });
-                }
-              } else {
-                console.warn(`⚠️ Unknown agent address: ${payment.to}`);
+                // Track platform earnings
+                setAgentEarnings((prev: AgentEarningsMap) => ({
+                  ...prev,
+                  platform: {
+                    name: 'AgentPay Platform',
+                    address: payment.to,
+                    earned: ((prev.platform ? parseFloat(prev.platform.earned) : 0) + parseFloat(payment.amount)).toFixed(2),
+                    icon: '🏦',
+                  },
+                }));
+                
+                addActivityEvent({
+                  id: `event-platform-fee-${result.transactionId}`,
+                  type: 'platform_fee',
+                  timestamp: Date.now(),
+                  data: {
+                    from: 'You',
+                    to: 'AgentPay Platform',
+                    amount: payment.amount,
+                    asset: 'USDC',
+                    feePercentage: PLATFORM_CONFIG.FEE_PERCENTAGE,
+                    transactionId: result.transactionId,
+                    success: true,
+                  },
+                });
+              } catch (transferError) {
+                const errorMsg = transferError instanceof Error ? transferError.message : 'Unknown error';
+                console.error(`❌ Platform fee transfer failed: ${errorMsg}`);
+                allPaymentsSuccessful = false;
+                
+                const platformFeeErrorId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+                addActivityEvent({
+                  id: `event-platform-fee-error-${platformFeeErrorId}`,
+                  type: 'platform_fee',
+                  timestamp: Date.now(),
+                  data: {
+                    from: 'You',
+                    to: 'AgentPay Platform',
+                    amount: payment.amount,
+                    asset: 'USDC',
+                    feePercentage: PLATFORM_CONFIG.FEE_PERCENTAGE,
+                    success: false,
+                    error: errorMsg,
+                  },
+                });
               }
-            } catch (outerError) {
-              console.error('❌ Payment processing failed:', outerError);
+              continue;
+            }
+            
+            // Find the agent type from the payment destination
+            const agentTypes = ['orchestrator', 'researcher', 'writer'] as const;
+            const agentType = agentTypes.find(type => 
+              getAgentAddress(type).toLowerCase() === payment.to.toLowerCase()
+            );
+            
+            if (agentType) {
+              const config = AGENT_CONFIGS[agentType];
+              console.log(`💸 Paying ${config.name} (${payment.to}) ${payment.amount} USDC...`);
+              
+              try {
+                const result = await nitroliteClient.transfer(payment.to as `0x${string}`, payment.amount);
+                console.log(`✅ Transfer to ${config.name} complete. TX ID: ${result.transactionId}`);
+                
+                // Track agent earnings
+                setAgentEarnings((prev: AgentEarningsMap) => ({
+                  ...prev,
+                  [agentType]: {
+                    name: config.name,
+                    address: payment.to,
+                    earned: ((prev[agentType] ? parseFloat(prev[agentType].earned) : 0) + parseFloat(payment.amount)).toFixed(2),
+                    icon: agentType === 'orchestrator' ? '🧠' : agentType === 'researcher' ? '🔍' : '✍️',
+                  },
+                }));
+                
+                addActivityEvent({
+                  id: `event-payment-${result.transactionId}`,
+                  type: 'payment',
+                  timestamp: Date.now(),
+                  data: {
+                    from: 'You',
+                    to: config.name,
+                    amount: payment.amount,
+                    asset: 'USDC',
+                    transactionId: result.transactionId,
+                    success: true,
+                  },
+                });
+              } catch (transferError) {
+                const errorMsg = transferError instanceof Error ? transferError.message : 'Unknown error';
+                console.error(`❌ Transfer to ${config.name} failed: ${errorMsg}`);
+                allPaymentsSuccessful = false;
+                
+                const paymentErrorId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+                addActivityEvent({
+                  id: `event-payment-error-${paymentErrorId}`,
+                  type: 'payment',
+                  timestamp: Date.now(),
+                  data: {
+                    from: 'You',
+                    to: config.name,
+                    amount: payment.amount,
+                    asset: 'USDC',
+                    success: false,
+                    error: errorMsg,
+                  },
+                });
+                
+                addActivityEvent({
+                  id: `event-error-${paymentErrorId}-detail`,
+                  type: 'error',
+                  timestamp: Date.now(),
+                  data: { 
+                    message: `Payment to ${config.name} failed: ${errorMsg}`,
+                    code: 'TRANSFER_FAILED',
+                  },
+                });
+                
+                throw new Error(`Payment to ${config.name} failed: ${errorMsg}`);
+              }
+            } else {
+              console.warn(`⚠️ Unknown payment destination: ${payment.to}`);
             }
           }
-        } else {
-          console.warn('⚠️ Yellow client not authenticated on client side - adding simulated events');
-          // Fallback: Add simulated payment events if not authenticated
-          if (data.events) {
-            data.events.forEach((event: ActivityEvent) => {
-              addActivityEvent(event);
-            });
+          
+          if (!allPaymentsSuccessful) {
+            showToast('warning', 'Some payments failed. Check activity feed for details.');
           }
+        } else {
+          console.warn('⚠️ Nitrolite client not authenticated - cannot execute payments');
+          const authErrorId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          addActivityEvent({
+            id: `event-error-${authErrorId}`,
+            type: 'error',
+            timestamp: Date.now(),
+            data: { 
+              message: 'Nitrolite client not authenticated. Please reconnect your session.',
+              code: 'NOT_AUTHENTICATED',
+            },
+          });
+          throw new Error('Nitrolite client not authenticated. Please reconnect your session.');
         }
       }
 
@@ -331,8 +413,9 @@ export default function Home() {
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setTaskError(errorMessage);
+      const catchErrorId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       addActivityEvent({
-        id: `event-error-${Date.now()}`,
+        id: `event-error-${catchErrorId}`,
         type: 'error',
         timestamp: Date.now(),
         data: { message: errorMessage },
@@ -407,6 +490,10 @@ export default function Home() {
               />
               
               <AgentCardsSection />
+              
+              {Object.keys(agentEarnings).length > 0 && (
+                <AgentEarnings earnings={agentEarnings} />
+              )}
             </div>
 
             {/* Right column - Task & Activity */}

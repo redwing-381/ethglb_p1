@@ -265,7 +265,7 @@ export function useYellowSession(): UseYellowSessionReturn {
           walletFunctions.walletAddress
         );
         
-        // Authenticate
+        // Authenticate Nitrolite client
         await nitroliteClient.authenticate();
         
         // Check unified balance first
@@ -468,6 +468,9 @@ export function useYellowSession(): UseYellowSessionReturn {
         console.log('✅ Channel closed on-chain');
         console.log('📝 TX Hash:', result.txHash);
         console.log('💰 Final balance returned:', result.finalBalance, 'USDC');
+        console.log('🔗 Etherscan:', `https://sepolia.etherscan.io/tx/${result.txHash}`);
+        
+        const totalSpent = (parseFloat(session.balance) - parseFloat(result.finalBalance)).toFixed(2);
         
         setLifecycleStatus({ 
           stage: 'complete', 
@@ -476,14 +479,29 @@ export function useYellowSession(): UseYellowSessionReturn {
           message: 'Channel closed and settled on-chain',
         });
 
-        // Add activity event
+        // Add settlement event with Etherscan link
+        const settlementId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
         addActivityEvent({
-          id: `evt_${Date.now()}`,
+          id: `evt_settlement_${settlementId}`,
+          type: 'settlement',
+          timestamp: Date.now(),
+          data: {
+            channelId: session.channelId || '',
+            txHash: result.txHash,
+            finalBalance: result.finalBalance,
+            totalSpent,
+            etherscanUrl: `https://sepolia.etherscan.io/tx/${result.txHash}`,
+          },
+        });
+
+        // Add task complete event
+        addActivityEvent({
+          id: `evt_complete_${settlementId}`,
           type: 'task_complete',
           timestamp: Date.now(),
           data: {
             taskId: session.channelId || '',
-            totalCost: (parseFloat(session.balance) - parseFloat(result.finalBalance)).toFixed(2),
+            totalCost: totalSpent,
             agentsUsed: [...new Set(session.payments.map(p => p.to))],
           },
         });
@@ -549,7 +567,43 @@ export function useYellowSession(): UseYellowSessionReturn {
         balance: newBalance.toFixed(2),
       };
     });
-  }, []);
+    
+    // Sync balance with Yellow Network after payment
+    const client = clientRef.current;
+    if (client?.isAuthenticated()) {
+      client.queryBalance()
+        .then(balance => {
+          console.log('💰 Balance synced from Yellow:', balance);
+          setSession(prev => ({ ...prev, balance }));
+          
+          // Add balance sync event with unique ID
+          const syncId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          addActivityEvent({
+            id: `evt_balance_sync_${syncId}`,
+            type: 'balance_sync',
+            timestamp: Date.now(),
+            data: {
+              balance,
+              isStale: false,
+            },
+          });
+        })
+        .catch(err => {
+          console.warn('⚠️ Balance sync failed:', err);
+          // Add stale balance event with unique ID
+          const syncId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          addActivityEvent({
+            id: `evt_balance_sync_stale_${syncId}`,
+            type: 'balance_sync',
+            timestamp: Date.now(),
+            data: {
+              balance: '0',
+              isStale: true,
+            },
+          });
+        });
+    }
+  }, [addActivityEvent]);
 
   const clearActivity = useCallback(() => {
     setActivityEvents([]);

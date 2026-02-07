@@ -158,6 +158,35 @@ export class NitroliteSDKClient {
   }
 
   /**
+   * Check if WebSocket is open and ready
+   */
+  private isWebSocketOpen(): boolean {
+    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+  }
+
+  /**
+   * Ensure the WebSocket is connected and authenticated.
+   * Reconnects + re-authenticates if the connection was dropped.
+   */
+  private async ensureConnection(): Promise<void> {
+    if (this.isWebSocketOpen()) {
+      return; // Connection is fine
+    }
+
+    console.log('🔄 WebSocket closed, reconnecting...');
+    
+    // Reconnect
+    await this.connectWebSocket();
+    
+    // Re-authenticate if we were previously authenticated
+    if (this._isAuthenticated && this.sessionSigner && this.sessionAddress && this.userAddress && this.walletClient) {
+      console.log('🔐 Re-authenticating after reconnect...');
+      await this.authenticate();
+      console.log('✅ Re-authenticated successfully');
+    }
+  }
+
+  /**
    * Authenticate with Yellow Network
    */
   async authenticate(): Promise<void> {
@@ -364,9 +393,14 @@ export class NitroliteSDKClient {
             });
           }
 
-          // Handle errors
+          // Handle errors — only for create/resize operations, ignore unrelated errors
           if (type === 'error' || msg.error) {
             const errorMsg = msg.res?.[2]?.error || msg.error?.message || 'Unknown error';
+            // Ignore "message validation failed" — these come from unrelated messages
+            if (errorMsg === 'message validation failed') {
+              console.warn('⚠️ Ignoring message validation error (likely unrelated)');
+              return;
+            }
             console.error('❌ Error:', errorMsg);
             this.ws?.removeEventListener('message', handler);
             reject(new Error(errorMsg));
@@ -395,9 +429,12 @@ export class NitroliteSDKClient {
    * Close channel and settle on-chain
    */
   async closeChannel(): Promise<{ txHash: string; finalBalance: string }> {
-    if (!this.ws || !this.sessionSigner || !this.nitroliteClient || !this.userAddress || !this.currentChannelId) {
+    if (!this.sessionSigner || !this.nitroliteClient || !this.userAddress || !this.currentChannelId) {
       throw new Error('No active channel to close');
     }
+
+    // Reconnect + re-auth if WebSocket was dropped
+    await this.ensureConnection();
 
     this.setStage('closing_channel', 'Closing channel on-chain...');
 
@@ -456,6 +493,10 @@ export class NitroliteSDKClient {
 
           if (type === 'error' || msg.error) {
             const errorMsg = msg.res?.[2]?.error || msg.error?.message || 'Unknown error';
+            if (errorMsg === 'message validation failed') {
+              console.warn('⚠️ Ignoring message validation error (likely unrelated)');
+              return;
+            }
             console.error('❌ Error:', errorMsg);
             this.ws?.removeEventListener('message', handler);
             reject(new Error(errorMsg));
@@ -485,9 +526,12 @@ export class NitroliteSDKClient {
    * Transfer funds (off-chain)
    */
   async transfer(destination: `0x${string}`, amount: string): Promise<{ transactionId: number }> {
-    if (!this.ws || !this.sessionSigner) {
+    if (!this.sessionSigner) {
       throw new Error('Client not initialized');
     }
+
+    // Reconnect + re-auth if WebSocket was dropped
+    await this.ensureConnection();
 
     return new Promise(async (resolve, reject) => {
       const handler = (event: MessageEvent) => {
@@ -504,6 +548,10 @@ export class NitroliteSDKClient {
 
         if (type === 'error' || msg.error) {
           const errorMsg = msg.res?.[2]?.error || msg.error?.message || 'Transfer failed';
+          if (errorMsg === 'message validation failed') {
+            console.warn('⚠️ Ignoring message validation error in transfer');
+            return;
+          }
           this.ws?.removeEventListener('message', handler);
           reject(new Error(errorMsg));
         }

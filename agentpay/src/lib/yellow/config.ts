@@ -38,21 +38,36 @@ export const DEFAULT_SCOPE = 'transfer,app.create';
 export const STORAGE_KEY = 'agentpay_yellow_state';
 
 // ============================================================================
+// Platform Fee Configuration
+// ============================================================================
+
+/**
+ * Platform fee configuration for the AgentPay business model.
+ * A 5% fee is charged on all agent payments to demonstrate sustainability.
+ */
+export const PLATFORM_CONFIG = {
+  /** Platform fee percentage (5%) */
+  FEE_PERCENTAGE: 5,
+  /** Platform fee recipient address */
+  FEE_ADDRESS: '0x6298feA679a1f6c547D15fe916c44229CE6D7359' as const,
+} as const;
+
+// ============================================================================
 // Agent Address Configuration
 // ============================================================================
 
 /**
- * Fixed agent addresses for payment routing.
+ * Agent wallet addresses for payment routing.
  * These addresses receive payments when agents complete work.
  * 
- * Note: These are platform-controlled addresses that represent each agent.
- * In Yellow's unified balance system, these addresses will accumulate earnings
- * from completed tasks. The platform controls these addresses.
+ * Each agent has a dedicated wallet that receives USDC payments
+ * for completed tasks on the Yellow Network.
  */
 export const AGENT_ADDRESSES = {
-  ORCHESTRATOR: '0x1111111111111111111111111111111111111111' as const,
-  RESEARCHER: '0x2222222222222222222222222222222222222222' as const,
-  WRITER: '0x3333333333333333333333333333333333333333' as const,
+  ORCHESTRATOR: '0x6894542573F3B5ed2f8d3125b4f08e2777d77523' as const,
+  RESEARCHER: '0xee9956a99bCCf064EA3f02e8878E57A5B53E311B' as const,
+  WRITER: '0xBE26c2208763aEB6e793758621F528Bc302b4A80' as const,
+  PLATFORM: PLATFORM_CONFIG.FEE_ADDRESS,
 } as const;
 
 export type AgentAddressKey = keyof typeof AGENT_ADDRESSES;
@@ -70,6 +85,15 @@ export function getAgentAddress(agentType: 'orchestrator' | 'researcher' | 'writ
     writer: AGENT_ADDRESSES.WRITER,
   };
   return mapping[agentType];
+}
+
+/**
+ * Get the platform fee address for fee collection.
+ * 
+ * @returns The platform fee recipient address
+ */
+export function getPlatformAddress(): `0x${string}` {
+  return PLATFORM_CONFIG.FEE_ADDRESS;
 }
 
 /**

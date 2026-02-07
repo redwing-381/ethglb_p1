@@ -1081,89 +1081,52 @@ export class YellowClient {
     }
 
     try {
-      try {
-        const transferResult = await this.sendRequest<TransferRPCResult>(
-          'transfer',
-          {
-            destination,
-            allocations: [{ asset: TEST_TOKEN, amount }],
-          }
-        );
-
-        this.balance -= transferAmount;
-        
-        const transaction = transferResult.transactions?.[0];
-        const transactionId = transaction?.id ?? Date.now();
-        
-        const payment: PaymentRecord = {
-          id: `pay_${transactionId}`,
-          from: this.walletAddress || '0x0',
-          to: destination,
-          amount,
-          timestamp: Date.now(),
-        };
-        this.payments.push(payment);
-        
-        if (transaction) {
-          this.transactionHistory.push(transaction);
+      const transferResult = await this.sendRequest<TransferRPCResult>(
+        'transfer',
+        {
+          destination,
+          allocations: [{ asset: TEST_TOKEN, amount }],
         }
-        
-        const paymentEvent: PaymentEvent = {
-          id: payment.id,
-          type: 'transfer',
-          transactionId,
-          from: (this.walletAddress || '0x0') as `0x${string}`,
-          to: destination,
-          amount,
-          asset: TEST_TOKEN,
-          timestamp: Date.now(),
-        };
-        this.config.onPaymentEvent?.(paymentEvent);
-        this.config.onBalanceUpdate?.(formatUSDC(this.balance));
+      );
 
-        return {
-          success: true,
-          transactionId,
-          newBalance: formatUSDC(this.balance),
-        };
-        
-      } catch (transferError) {
-        console.warn('⚠️ Real Yellow transfer failed, using demo mode:', transferError);
-        
-        this.balance -= transferAmount;
-        
-        const demoTxId = Date.now() + Math.floor(Math.random() * 1000);
-        
-        const payment: PaymentRecord = {
-          id: `pay_demo_${demoTxId}`,
-          from: this.walletAddress || '0x0',
-          to: destination,
-          amount,
-          timestamp: Date.now(),
-        };
-        this.payments.push(payment);
-        
-        const paymentEvent: PaymentEvent = {
-          id: payment.id,
-          type: 'transfer',
-          transactionId: demoTxId,
-          from: (this.walletAddress || '0x0') as `0x${string}`,
-          to: destination,
-          amount,
-          asset: TEST_TOKEN,
-          timestamp: Date.now(),
-        };
-        this.config.onPaymentEvent?.(paymentEvent);
-        this.config.onBalanceUpdate?.(formatUSDC(this.balance));
-
-        return {
-          success: true,
-          transactionId: demoTxId,
-          newBalance: formatUSDC(this.balance),
-        };
+      this.balance -= transferAmount;
+      
+      const transaction = transferResult.transactions?.[0];
+      const transactionId = transaction?.id ?? Date.now();
+      
+      const payment: PaymentRecord = {
+        id: `pay_${transactionId}`,
+        from: this.walletAddress || '0x0',
+        to: destination,
+        amount,
+        timestamp: Date.now(),
+      };
+      this.payments.push(payment);
+      
+      if (transaction) {
+        this.transactionHistory.push(transaction);
       }
+      
+      const paymentEvent: PaymentEvent = {
+        id: payment.id,
+        type: 'transfer',
+        transactionId,
+        from: (this.walletAddress || '0x0') as `0x${string}`,
+        to: destination,
+        amount,
+        asset: TEST_TOKEN,
+        timestamp: Date.now(),
+      };
+      this.config.onPaymentEvent?.(paymentEvent);
+      this.config.onBalanceUpdate?.(formatUSDC(this.balance));
+
+      return {
+        success: true,
+        transactionId,
+        newBalance: formatUSDC(this.balance),
+      };
     } catch (error) {
-      console.error('❌ Transfer failed completely:', error);
+      console.error('❌ Transfer failed:', error);
       throw this.createError('TRANSFER_FAILED', (error as Error).message);
     }
   }

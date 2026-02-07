@@ -92,11 +92,14 @@ export interface SubTask {
 // Activity Event Types
 export type ActivityEvent = 
   | { id: string; type: 'payment'; timestamp: number; data: PaymentEventData }
+  | { id: string; type: 'platform_fee'; timestamp: number; data: PlatformFeeEventData }
   | { id: string; type: 'task_start'; timestamp: number; data: TaskStartData }
   | { id: string; type: 'subtask_start'; timestamp: number; data: SubTaskStartData }
   | { id: string; type: 'subtask_complete'; timestamp: number; data: SubTaskCompleteData }
   | { id: string; type: 'task_complete'; timestamp: number; data: TaskCompleteData }
-  | { id: string; type: 'error'; timestamp: number; data: ErrorData };
+  | { id: string; type: 'settlement'; timestamp: number; data: SettlementData }
+  | { id: string; type: 'error'; timestamp: number; data: ErrorData }
+  | { id: string; type: 'balance_sync'; timestamp: number; data: BalanceSyncData };
 
 export interface PaymentEventData {
   from: string;
@@ -104,6 +107,24 @@ export interface PaymentEventData {
   amount: string;
   asset: string;
   transactionId?: number;
+  success?: boolean;
+  error?: string;
+}
+
+export interface PlatformFeeEventData {
+  from: string;
+  to: string;
+  amount: string;
+  asset: string;
+  feePercentage: number;
+  transactionId?: number;
+  success?: boolean;
+  error?: string;
+}
+
+export interface BalanceSyncData {
+  balance: string;
+  isStale: boolean;
 }
 
 export interface TaskStartData {
@@ -127,6 +148,14 @@ export interface TaskCompleteData {
   taskId: string;
   totalCost: string;
   agentsUsed: string[];
+}
+
+export interface SettlementData {
+  channelId: string;
+  txHash: string;
+  finalBalance: string;
+  totalSpent: string;
+  etherscanUrl: string;
 }
 
 export interface ErrorData {
@@ -174,6 +203,23 @@ export interface TaskResult {
   totalCost: string;
   agentsUsed: string[];
   subTaskCount: number;
+  costBreakdown?: CostBreakdown;
+}
+
+// Cost Breakdown Types
+export interface AgentCost {
+  agentType: AgentType;
+  agentName: string;
+  basePrice: string;
+  finalPrice: string;
+}
+
+export interface CostBreakdown {
+  agentCosts: AgentCost[];
+  platformFee: string;
+  platformFeePercentage: number;
+  totalAgentCost: string;
+  totalCost: string;
 }
 
 export interface AgentExecuteRequest {

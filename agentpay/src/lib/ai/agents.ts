@@ -8,15 +8,24 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
 import { AGENT_ADDRESSES } from '../yellow/config';
+import { AGENT_PRICING, calculateTaskCost } from '../payment/price-calculator';
 
 // Agent types
 export type AgentType = 'orchestrator' | 'researcher' | 'writer';
+
+// Agent pricing interface
+export interface AgentPricing {
+  basePrice: string;
+  complexityMultiplier: number;
+}
 
 // Agent configuration
 export interface AgentConfig {
   name: string;
   type: AgentType;
+  /** @deprecated Use pricing.basePrice instead */
   costPerTask: string;
+  pricing: AgentPricing;
   model: string;
   systemPrompt: string;
   maxTokens: number;
@@ -44,13 +53,14 @@ export interface OrchestratorPlan {
   estimatedCost: string;
 }
 
-// Agent configurations
+// Agent configurations with different models per role
 export const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
   orchestrator: {
     name: 'Orchestrator',
     type: 'orchestrator',
-    costPerTask: '0',
-    model: 'openai/gpt-4o-mini',
+    costPerTask: '0', // deprecated
+    pricing: AGENT_PRICING.orchestrator,
+    model: 'openai/gpt-4o', // More capable for planning
     address: AGENT_ADDRESSES.ORCHESTRATOR,
     systemPrompt: `You are a task orchestrator for an AI agent marketplace. Analyze the user's task and break it down into sub-tasks.
 
@@ -73,8 +83,9 @@ Rules:
   researcher: {
     name: 'Researcher',
     type: 'researcher',
-    costPerTask: '0.02',
-    model: 'openai/gpt-4o-mini',
+    costPerTask: '0.02', // deprecated
+    pricing: AGENT_PRICING.researcher,
+    model: 'openai/gpt-4o-mini', // Good for research
     address: AGENT_ADDRESSES.RESEARCHER,
     systemPrompt: `You are a research specialist in an AI agent marketplace. Your job is to gather and synthesize information on the given topic.
 
@@ -85,8 +96,9 @@ Format your response with clear sections and bullet points where appropriate.`,
   writer: {
     name: 'Writer',
     type: 'writer',
-    costPerTask: '0.02',
-    model: 'openai/gpt-4o-mini',
+    costPerTask: '0.02', // deprecated
+    pricing: AGENT_PRICING.writer,
+    model: 'anthropic/claude-3-haiku', // Good for writing
     address: AGENT_ADDRESSES.WRITER,
     systemPrompt: `You are a content writer in an AI agent marketplace. Create clear, engaging content based on the provided information.
 
@@ -177,27 +189,27 @@ export function parseOrchestratorPlan(response: string): OrchestratorPlan {
       order: index,
     }));
 
-    // Calculate estimated cost
-    const estimatedCost = subTasks.reduce((total, st) => {
-      const config = AGENT_CONFIGS[st.agentType];
-      return total + parseFloat(config?.costPerTask || '0');
-    }, 0);
+    // Calculate estimated cost using the new price calculator (includes platform fee)
+    const costBreakdown = calculateTaskCost(subTasks);
 
     return {
       subTasks,
-      estimatedCost: estimatedCost.toFixed(2),
+      estimatedCost: costBreakdown.totalCost,
     };
   } catch (error) {
     console.error('Failed to parse orchestrator plan:', error);
     // Return a default plan with a single researcher task
+    const defaultSubTasks: SubTask[] = [{
+      id: `subtask-${Date.now()}-0`,
+      description: 'Research and respond to the user request',
+      agentType: 'researcher',
+      order: 0,
+    }];
+    const costBreakdown = calculateTaskCost(defaultSubTasks);
+    
     return {
-      subTasks: [{
-        id: `subtask-${Date.now()}-0`,
-        description: 'Research and respond to the user request',
-        agentType: 'researcher',
-        order: 0,
-      }],
-      estimatedCost: '0.02',
+      subTasks: defaultSubTasks,
+      estimatedCost: costBreakdown.totalCost,
     };
   }
 }

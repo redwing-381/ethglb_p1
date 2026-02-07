@@ -3,7 +3,8 @@ import { planTask } from '@/agents/orchestrator';
 import { research } from '@/agents/researcher';
 import { write } from '@/agents/writer';
 import { AGENT_CONFIGS, type AgentType } from '@/lib/ai';
-import { getAgentAddress } from '@/lib/yellow';
+import { getAgentAddress, getPlatformAddress, PLATFORM_CONFIG } from '@/lib/yellow';
+import { calculateTaskCost, type CostBreakdown } from '@/lib/payment';
 import type { ActivityEvent, PaymentRecord } from '@/types';
 
 interface TaskRequest {
@@ -20,23 +21,18 @@ interface SubTaskResult {
   cost: string;
 }
 
-/**
- * Execute a payment to an agent.
- * 
- * In the current model, payments are tracked server-side but the actual
- * Yellow transfers happen on the client side where the wallet is connected.
- */
-function executeAgentPayment(
-  agentType: 'orchestrator' | 'researcher' | 'writer',
-  amount: string
-): { success: boolean; transactionId?: number; error?: string } {
-  // Server-side doesn't have authenticated Yellow session
-  // Return success with a placeholder - actual transfer happens on client
-  console.log(`📋 Payment queued for ${agentType}: ${amount} USDC (will execute on client)`);
-  return { 
-    success: true, 
-    transactionId: Date.now(), // Placeholder - real ID comes from client transfer
+interface TaskResponse {
+  status: 'complete' | 'partial' | 'failed';
+  result: {
+    content: string;
+    totalCost: string;
+    agentsUsed: string[];
+    subTaskCount: number;
+    costBreakdown: CostBreakdown;
   };
+  payments: PaymentRecord[];
+  events: ActivityEvent[];
+  allPaymentsSuccessful: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -62,11 +58,19 @@ export async function POST(request: NextRequest) {
     console.log('📋 Planning task with orchestrator...');
     const plan = await planTask(task);
     
-    // Check if we have enough balance
-    const estimatedCost = parseFloat(plan.estimatedCost);
+    // Calculate cost breakdown with platform fee
+    const costBreakdown = calculateTaskCost(plan.subTasks);
+    
+    // Check if we have enough balance (including platform fee)
+    const estimatedCost = parseFloat(costBreakdown.totalCost);
     if (estimatedCost > currentBalance) {
       return NextResponse.json(
-        { error: 'Insufficient balance for this task', estimatedCost },
+        { 
+          error: 'Insufficient balance for this task', 
+          estimatedCost: costBreakdown.totalCost,
+          costBreakdown,
+          currentBalance,
+        },
         { status: 400 }
       );
     }
@@ -76,55 +80,36 @@ export async function POST(request: NextRequest) {
     const payments: PaymentRecord[] = [];
     const events: ActivityEvent[] = [];
     let context = '';
-    let totalCost = 0;
 
     for (const subTask of plan.subTasks) {
       const config = AGENT_CONFIGS[subTask.agentType];
-      const cost = parseFloat(config.costPerTask);
+      const agentCost = costBreakdown.agentCosts.find(c => c.agentType === subTask.agentType);
+      const cost = agentCost?.finalPrice || config.pricing.basePrice;
       const agentAddress = getAgentAddress(subTask.agentType);
 
-      // Execute the real Yellow transfer
-      const paymentResult = await executeAgentPayment(
-        subTask.agentType,
-        config.costPerTask
-      );
+      // Queue payment for client-side execution
+      // Server-side doesn't have authenticated Yellow session
+      console.log(`📋 Payment queued for ${config.name}: ${cost} USDC`);
 
-      if (!paymentResult.success) {
-        // Handle payment failure
-        if (paymentResult.error === 'INSUFFICIENT_BALANCE') {
-          return NextResponse.json(
-            { 
-              error: 'Insufficient balance for agent payment',
-              code: 'INSUFFICIENT_BALANCE',
-              partialResults: results,
-            },
-            { status: 400 }
-          );
-        }
-        
-        // Log error but continue with task execution
-        console.warn(`Payment to ${subTask.agentType} failed, continuing...`);
-      }
-
-      // Record payment with real transaction ID
+      // Record payment (will be executed on client)
       const payment: PaymentRecord = {
-        id: `payment-${paymentResult.transactionId || Date.now()}-${subTask.id}`,
+        id: `payment-${Date.now()}-${subTask.id}`,
         from: 'user',
         to: agentAddress,
-        amount: config.costPerTask,
+        amount: cost,
         timestamp: Date.now(),
       };
       payments.push(payment);
 
       // Create payment event for activity feed
       events.push({
-        id: `event-${Date.now()}-${subTask.id}`,
+        id: `event-payment-${Date.now()}-${subTask.id}`,
         type: 'payment',
         timestamp: Date.now(),
         data: {
           from: 'You',
           to: config.name,
-          amount: config.costPerTask,
+          amount: cost,
           asset: 'USDC',
         },
       });
@@ -169,14 +154,39 @@ export async function POST(request: NextRequest) {
         agentType: subTask.agentType,
         content: result.content,
         success: result.success,
-        cost: config.costPerTask,
+        cost,
       });
 
       // Build context for next agent
       if (result.success) {
         context += `\n\n--- ${config.name} Output ---\n${result.content}`;
-        totalCost += cost;
       }
+    }
+
+    // Add platform fee payment (if there's a fee to charge)
+    if (parseFloat(costBreakdown.platformFee) > 0) {
+      const platformPayment: PaymentRecord = {
+        id: `payment-platform-${Date.now()}`,
+        from: 'user',
+        to: getPlatformAddress(),
+        amount: costBreakdown.platformFee,
+        timestamp: Date.now(),
+      };
+      payments.push(platformPayment);
+
+      // Create platform fee event
+      events.push({
+        id: `event-platform-fee-${Date.now()}`,
+        type: 'platform_fee',
+        timestamp: Date.now(),
+        data: {
+          from: 'You',
+          to: 'AgentPay Platform',
+          amount: costBreakdown.platformFee,
+          asset: 'USDC',
+          feePercentage: PLATFORM_CONFIG.FEE_PERCENTAGE,
+        },
+      });
     }
 
     // Step 3: Aggregate results
@@ -187,19 +197,23 @@ export async function POST(request: NextRequest) {
 
     const agentsUsed = [...new Set(results.map(r => AGENT_CONFIGS[r.agentType].name))];
 
-    console.log(`✅ Task complete. Total cost: ${totalCost.toFixed(2)} USDC`);
+    console.log(`✅ Task complete. Total cost: ${costBreakdown.totalCost} USDC (including ${costBreakdown.platformFee} platform fee)`);
 
-    return NextResponse.json({
+    const response: TaskResponse = {
       status: 'complete',
       result: {
         content: aggregatedContent || 'No results generated',
-        totalCost: totalCost.toFixed(2),
+        totalCost: costBreakdown.totalCost,
         agentsUsed,
         subTaskCount: results.length,
+        costBreakdown,
       },
       payments,
       events,
-    });
+      allPaymentsSuccessful: true, // Will be updated by client after actual transfers
+    };
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Task processing error:', error);
