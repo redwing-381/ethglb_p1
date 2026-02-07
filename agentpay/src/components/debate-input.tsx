@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { GlowingButton } from '@/components/ui/glowing-button';
+import { ShuffleButton } from '@/components/ui/shuffle-button';
 import { Textarea } from '@/components/ui/textarea';
 
 const SUGGESTED_TOPICS = [
@@ -60,26 +61,28 @@ export function DebateInput({ isSessionActive, onSubmit }: DebateInputProps) {
         {isSessionActive && !topic && (
           <div className="flex flex-wrap gap-1.5">
             {SUGGESTED_TOPICS.map((t) => (
-              <button
+              <ShuffleButton
                 key={t}
                 onClick={() => setTopic(t)}
-                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
+                duration={0.6}
+                className="h-auto px-2.5 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full"
               >
                 {t}
-              </button>
+              </ShuffleButton>
             ))}
           </div>
         )}
 
         {error && <p className="text-xs text-red-600">{error}</p>}
 
-        <Button
+        <GlowingButton
           onClick={handleSubmit}
           disabled={!isSessionActive || isSubmitting || !topic.trim()}
+          glowColor="#8B5CF6"
           className="w-full"
         >
           {isSubmitting ? 'Debating...' : '⚡ Start Debate'}
-        </Button>
+        </GlowingButton>
       </CardContent>
     </Card>
   );

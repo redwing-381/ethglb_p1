@@ -1,23 +1,31 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnimatedList } from '@/components/ui/animated-list';
 import type { ActivityEvent } from '@/types';
 import { useEnsName } from '@/hooks/use-ens-name';
 import { formatUSDC } from '@/lib/utils';
-import { getDisplayName, getAgentInfo } from '@/lib/ai';
+import { getDisplayName, getAgentInfo, getEnsDisplayName } from '@/lib/ai';
+import { useEnsAgentRegistry } from '@/hooks/use-ens-agent-registry';
+import type { EnsAgentConfig } from '@/types';
 
 interface ActivityFeedProps {
   events: ActivityEvent[];
   maxEvents?: number;
 }
 
-// Payment event component with ENS name resolution and agent names
-function PaymentEvent({ event }: { event: Extract<ActivityEvent, { type: 'payment' }> }) {
+// Payment event component with ENS subname resolution
+function PaymentEvent({ event, ensAgents }: { event: Extract<ActivityEvent, { type: 'payment' }>; ensAgents: EnsAgentConfig[] }) {
   const { ensName: fromEnsName } = useEnsName(event.data.from);
   const { ensName: toEnsName } = useEnsName(event.data.to);
   
-  const fromDisplayName = getDisplayName(event.data.from, fromEnsName);
-  const toDisplayName = getDisplayName(event.data.to, toEnsName);
+  // Prefer ENS subname from registry, then wagmi ENS, then truncated address
+  const fromDisplayName = ensAgents.length > 0
+    ? getEnsDisplayName(event.data.from, ensAgents)
+    : getDisplayName(event.data.from, fromEnsName);
+  const toDisplayName = ensAgents.length > 0
+    ? getEnsDisplayName(event.data.to, ensAgents)
+    : getDisplayName(event.data.to, toEnsName);
   const toAgent = getAgentInfo(event.data.to);
   
   const isSuccess = event.data.success !== false;
@@ -99,6 +107,7 @@ function SettlementEvent({ event }: { event: Extract<ActivityEvent, { type: 'set
 
 export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
   const displayEvents = events.slice(0, maxEvents);
+  const { agents: ensAgents } = useEnsAgentRegistry();
 
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString('en-US', { 
@@ -110,7 +119,7 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
   const renderEventContent = (event: ActivityEvent) => {
     switch (event.type) {
       case 'payment':
-        return <PaymentEvent event={event} />;
+        return <PaymentEvent event={event} ensAgents={ensAgents} />;
       case 'platform_fee':
         return <PlatformFeeEvent event={event} />;
       case 'balance_sync':
@@ -177,18 +186,20 @@ export function ActivityFeed({ events, maxEvents = 20 }: ActivityFeedProps) {
       </CardHeader>
       <CardContent>
         {displayEvents.length > 0 ? (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {displayEvents.map((event) => (
-              <div 
-                key={event.id}
-                className="flex items-start gap-2 text-xs"
-              >
-                <span className="text-gray-400 flex-shrink-0 w-12">{formatTime(event.timestamp)}</span>
-                <div className="flex-1 min-w-0">
-                  {renderEventContent(event)}
+          <div className="max-h-96 overflow-y-auto">
+            <AnimatedList className="space-y-2">
+              {displayEvents.map((event) => (
+                <div 
+                  key={event.id}
+                  className="flex items-start gap-2 text-xs"
+                >
+                  <span className="text-gray-400 flex-shrink-0 w-12">{formatTime(event.timestamp)}</span>
+                  <div className="flex-1 min-w-0">
+                    {renderEventContent(event)}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </AnimatedList>
           </div>
         ) : (
           <div className="text-center py-8">

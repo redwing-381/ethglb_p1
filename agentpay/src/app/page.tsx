@@ -8,7 +8,10 @@ import { DebateResults } from '@/components/debate-results';
 import { DebateProgress } from '@/components/debate-progress';
 import { ActivityFeed } from '@/components/activity-feed';
 import { AgentCardsSection } from '@/components/agent-cards-section';
+import { ForumFeed } from '@/components/forum-feed';
 import { ToastContainer } from '@/components/toast';
+import { HyperspaceBackground } from '@/components/ui/hyperspace-background';
+import { BlurReveal } from '@/components/ui/blur-reveal';
 import { useYellowSession } from '@/hooks/use-yellow-session';
 import { useToast } from '@/hooks/use-toast';
 import { getNitroliteClient, getPlatformAddress, PLATFORM_CONFIG } from '@/lib/yellow';
@@ -288,19 +291,41 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {!isWalletConnected ? (
-          <div className="max-w-2xl mx-auto text-center py-16">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">AI Debate Arena</h2>
-            <p className="text-gray-600 mb-8">
-              Watch 6 AI agents debate any topic. They pay each other instantly using Yellow Network state channels.
-            </p>
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-              <p className="text-sm text-gray-500 mb-4">Connect your wallet to get started</p>
-              <WalletConnect />
-            </div>
-            <div className="flex items-center justify-center gap-6 text-xs text-gray-500">
-              <span>Powered by Yellow Network</span>
-              <span>•</span>
-              <span>ENS</span>
+          <div className="relative flex flex-col items-center justify-center min-h-[80vh] overflow-hidden rounded-2xl bg-black">
+            <HyperspaceBackground
+              starSpeed={1.02}
+              starTrailOpacity={0.6}
+              starColor="#8B5CF6"
+              starSize={0.4}
+              className="z-0"
+            />
+            <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl">
+              <BlurReveal delay={0}>
+                <div className="mb-6 text-5xl">⚡</div>
+              </BlurReveal>
+              <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
+                <BlurReveal delay={0.1}>AI&nbsp;</BlurReveal>
+                <BlurReveal delay={0.2}>Debate&nbsp;</BlurReveal>
+                <BlurReveal delay={0.3}>Arena</BlurReveal>
+              </h2>
+              <BlurReveal delay={0.5} className="text-lg text-white/70 mb-10 leading-relaxed max-w-lg">
+                6 AI agents debate any topic and pay each other instantly — zero gas, powered by Yellow Network state channels.
+              </BlurReveal>
+              <BlurReveal delay={0.7}>
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl p-6 mb-8 w-full max-w-sm">
+                  <p className="text-sm text-white/60 mb-4">Connect your wallet to enter</p>
+                  <WalletConnect />
+                </div>
+              </BlurReveal>
+              <BlurReveal delay={0.9}>
+                <div className="flex items-center gap-6 text-xs text-white/40">
+                  <span>Yellow Network</span>
+                  <span className="w-1 h-1 rounded-full bg-white/30" />
+                  <span>ENS</span>
+                  <span className="w-1 h-1 rounded-full bg-white/30" />
+                  <span>LI.FI</span>
+                </div>
+              </BlurReveal>
             </div>
           </div>
         ) : (
@@ -316,7 +341,8 @@ export default function Home() {
                 readContract={readContract} currentChainId={chainId}
                 switchChain={switchChain} walletClient={walletClient}
               />
-              <AgentCardsSection />
+              <AgentCardsSection activeAgent={activeAgent} />
+              <ForumFeed />
               {Object.keys(agentEarnings).length > 0 && (
                 <AgentEarnings earnings={agentEarnings} />
               )}

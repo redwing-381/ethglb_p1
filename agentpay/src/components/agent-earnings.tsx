@@ -10,6 +10,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { AnimatedList } from '@/components/ui/animated-list';
 
 export interface AgentEarning {
   name: string;
@@ -35,22 +36,24 @@ export function AgentEarnings({ earnings }: AgentEarningsProps) {
       <h3 className="text-sm font-medium text-gray-700 mb-3">Agent Earnings (Off-Chain)</h3>
       <Card>
         <CardContent className="p-4 space-y-3">
-          {entries.map((entry) => (
-            <div key={entry.address} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{entry.icon}</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{entry.name}</p>
-                  <p className="text-xs text-gray-400 font-mono">
-                    {entry.address.slice(0, 6)}...{entry.address.slice(-4)}
-                  </p>
+          <AnimatedList className="space-y-3">
+            {entries.map((entry) => (
+              <div key={entry.address} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{entry.icon}</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{entry.name}</p>
+                    <p className="text-xs text-gray-400 font-mono">
+                      {entry.address.slice(0, 6)}...{entry.address.slice(-4)}
+                    </p>
+                  </div>
                 </div>
+                <span className="text-sm font-semibold text-green-600">
+                  +{entry.earned} USDC
+                </span>
               </div>
-              <span className="text-sm font-semibold text-green-600">
-                +{entry.earned} USDC
-              </span>
-            </div>
-          ))}
+            ))}
+          </AnimatedList>
           
           <div className="border-t border-gray-100 pt-2 flex items-center justify-between">
             <span className="text-xs text-gray-500">Total distributed</span>

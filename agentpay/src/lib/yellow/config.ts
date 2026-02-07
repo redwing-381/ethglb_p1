@@ -143,3 +143,96 @@ export const YELLOW_CONFIG = {
 } as const;
 
 export default YELLOW_CONFIG;
+
+// ============================================================================
+// ENS Agent Registry Configuration
+// ============================================================================
+
+/** Parent ENS domain for all AgentPay agents */
+export const ENS_PARENT_DOMAIN = 'agentpay.eth';
+
+/** Mapping from agent type to ENS subname */
+export const AGENT_ENS_NAMES: Record<DebateAgentType | 'platform', string> = {
+  moderator:    'moderator.agentpay.eth',
+  debater_a:    'debater-a.agentpay.eth',
+  debater_b:    'debater-b.agentpay.eth',
+  fact_checker: 'factchecker.agentpay.eth',
+  judge:        'judge.agentpay.eth',
+  summarizer:   'summarizer.agentpay.eth',
+  platform:     'platform.agentpay.eth',
+};
+
+/** ENS text record keys used for agent metadata */
+export const ENS_TEXT_RECORD_KEYS = [
+  'description',
+  'org.agentpay.role',
+  'org.agentpay.model',
+  'org.agentpay.price',
+] as const;
+
+/** Complete fallback config for each agent when ENS resolution fails */
+export const AGENT_FALLBACK_CONFIG: Record<DebateAgentType | 'platform', {
+  address: `0x${string}`;
+  name: string;
+  description: string;
+  model: string;
+  basePrice: string;
+  icon: string;
+}> = {
+  moderator: {
+    address: AGENT_ADDRESSES.MODERATOR,
+    name: 'Moderator',
+    description: 'AI Moderator - Sets up and manages debates',
+    model: 'anthropic/claude-3-sonnet',
+    basePrice: '0.01',
+    icon: '🎙️',
+  },
+  debater_a: {
+    address: AGENT_ADDRESSES.DEBATER_A,
+    name: 'Debater A',
+    description: 'AI Debater - Argues FOR the topic',
+    model: 'anthropic/claude-3-sonnet',
+    basePrice: '0.02',
+    icon: '🔵',
+  },
+  debater_b: {
+    address: AGENT_ADDRESSES.DEBATER_B,
+    name: 'Debater B',
+    description: 'AI Debater - Argues AGAINST the topic',
+    model: 'openai/gpt-4-turbo',
+    basePrice: '0.02',
+    icon: '🔴',
+  },
+  fact_checker: {
+    address: AGENT_ADDRESSES.FACT_CHECKER,
+    name: 'Fact Checker',
+    description: 'AI Fact Checker - Verifies claims from both sides',
+    model: 'anthropic/claude-3-sonnet',
+    basePrice: '0.015',
+    icon: '🔍',
+  },
+  judge: {
+    address: AGENT_ADDRESSES.JUDGE,
+    name: 'Judge',
+    description: 'AI Judge - Scores rounds and delivers verdict',
+    model: 'openai/gpt-4-turbo',
+    basePrice: '0.015',
+    icon: '⚖️',
+  },
+  summarizer: {
+    address: AGENT_ADDRESSES.SUMMARIZER,
+    name: 'Summarizer',
+    description: 'AI Summarizer - Produces the final debate summary',
+    model: 'anthropic/claude-3-sonnet',
+    basePrice: '0.02',
+    icon: '📝',
+  },
+  platform: {
+    address: PLATFORM_CONFIG.FEE_ADDRESS,
+    name: 'AgentPay Platform',
+    description: 'Platform fee collection',
+    model: 'n/a',
+    basePrice: '0',
+    icon: '🏦',
+  },
+};

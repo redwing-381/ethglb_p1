@@ -17,9 +17,10 @@ interface EnsCacheEntry {
 // Cache configuration
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-// Separate caches for forward (name → address) and reverse (address → name) resolution
+// Separate caches for forward (name → address), reverse (address → name), and text records
 const forwardCache = new Map<string, EnsCacheEntry>();
 const reverseCache = new Map<string, EnsCacheEntry>();
+const textRecordCache = new Map<string, EnsCacheEntry>();
 
 /**
  * Truncates an Ethereum address to format: 0xAAAA...ZZZZ
@@ -162,6 +163,7 @@ export function setCachedReverseResolution(address: string, name: string | null)
 export function clearEnsCache(): void {
   forwardCache.clear();
   reverseCache.clear();
+  textRecordCache.clear();
 }
 
 /**
@@ -173,6 +175,43 @@ export function getCacheStats() {
   return {
     forwardCacheSize: forwardCache.size,
     reverseCacheSize: reverseCache.size,
-    totalEntries: forwardCache.size + reverseCache.size,
+    textRecordCacheSize: textRecordCache.size,
+    totalEntries: forwardCache.size + reverseCache.size + textRecordCache.size,
   };
+}
+
+/**
+ * Gets cached text record value for an ENS name + key pair
+ * 
+ * @param name - ENS name
+ * @param key - Text record key (e.g., 'org.agentpay.role')
+ * @returns Cached value, null if resolved to nothing, or undefined if not cached/stale
+ */
+export function getCachedTextRecord(name: string, key: string): string | null | undefined {
+  const cacheKey = `${name.toLowerCase()}:${key}`;
+  const entry = textRecordCache.get(cacheKey);
+  
+  if (!entry) return undefined;
+  
+  if (!isCacheEntryFresh(entry)) {
+    textRecordCache.delete(cacheKey);
+    return undefined;
+  }
+  
+  return entry.value;
+}
+
+/**
+ * Stores a text record value in cache
+ * 
+ * @param name - ENS name
+ * @param key - Text record key
+ * @param value - Resolved value (or null if not found)
+ */
+export function setCachedTextRecord(name: string, key: string, value: string | null): void {
+  const cacheKey = `${name.toLowerCase()}:${key}`;
+  textRecordCache.set(cacheKey, {
+    value,
+    timestamp: Date.now(),
+  });
 }

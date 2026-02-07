@@ -6,7 +6,7 @@
  */
 
 import { useEnsAddress as useWagmiEnsAddress } from 'wagmi';
-import { mainnet } from 'wagmi/chains';
+import { sepolia } from 'wagmi/chains';
 import { 
   getCachedForwardResolution, 
   setCachedForwardResolution,
@@ -70,7 +70,7 @@ export function useEnsAddress(ensName: string | undefined): UseEnsAddressResult 
     error: wagmiError 
   } = useWagmiEnsAddress({
     name: ensName,
-    chainId: mainnet.id,
+    chainId: sepolia.id,
     query: {
       enabled: !!ensName && isValidFormat && cachedAddress === undefined,
     },

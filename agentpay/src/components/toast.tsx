@@ -1,10 +1,13 @@
 /**
  * Toast Notification Components
  * 
- * Displays success, error, info, and warning messages with auto-dismiss
+ * Displays success, error, info, and warning messages with animated enter/exit
  */
 
+'use client';
+
 import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from 'motion/react';
 import type { Toast } from '@/hooks/use-toast';
 
 interface ToastContainerProps {
@@ -15,9 +18,19 @@ interface ToastContainerProps {
 export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   return (
     <div className="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none">
-      {toasts.map(toast => (
-        <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
-      ))}
+      <AnimatePresence>
+        {toasts.map(toast => (
+          <motion.div
+            key={toast.id}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 100, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <ToastItem toast={toast} onDismiss={onDismiss} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

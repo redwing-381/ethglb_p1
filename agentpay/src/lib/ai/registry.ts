@@ -99,3 +99,35 @@ export function isKnownAgent(address: string): boolean {
 export function getAgentByType(agentType: DebateAgentType): AgentInfo {
   return AGENTS[agentType];
 }
+
+// ============================================================================
+// ENS-Aware Registry Functions
+// ============================================================================
+
+import type { EnsAgentConfig } from '@/types';
+
+/**
+ * Get display name preferring ENS subname for known agents.
+ * Falls back to agent name, then truncated address.
+ */
+export function getEnsDisplayName(
+  address: string,
+  ensAgents: EnsAgentConfig[]
+): string {
+  const agent = ensAgents.find(a => a.address.toLowerCase() === address.toLowerCase());
+  if (agent) return agent.ensName;
+  // Fall back to hardcoded registry
+  const info = getAgentInfo(address);
+  if (info) return info.name;
+  return truncateAddress(address);
+}
+
+/**
+ * Get agent config by address from ENS registry data
+ */
+export function getEnsAgentByAddress(
+  address: string,
+  ensAgents: EnsAgentConfig[]
+): EnsAgentConfig | undefined {
+  return ensAgents.find(a => a.address.toLowerCase() === address.toLowerCase());
+}

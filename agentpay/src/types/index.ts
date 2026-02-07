@@ -256,3 +256,56 @@ export type ErrorCode =
   | 'TASK_PROCESSING_FAILED'
   | 'NETWORK_ERROR'
   | 'VALIDATION_ERROR';
+
+// ============================================================================
+// ENS Agent Registry Types
+// ============================================================================
+
+export interface EnsAgentConfig {
+  agentType: DebateAgentType | 'platform';
+  ensName: string;
+  address: `0x${string}`;
+  name: string;
+  description: string;
+  model: string;
+  basePrice: string;
+  icon: string;
+  avatar: string | null;
+  isEnsResolved: boolean;
+}
+
+export interface EnsTextRecords {
+  description: string | null;
+  role: string | null;
+  model: string | null;
+  price: string | null;
+  avatar: string | null;
+}
+
+// ============================================================================
+// Agent Forum Types
+// ============================================================================
+
+export interface ForumPost {
+  id: string;
+  agentType: DebateAgentType | 'platform';
+  content: string;
+  timestamp: number;
+  isAiGenerated: boolean;
+  payment?: ForumPayment;
+}
+
+export interface ForumPayment {
+  fromAgent: DebateAgentType | 'platform';
+  toAgent: DebateAgentType | 'platform';
+  amount: string;
+  reason: string;
+}
+
+export interface ForumConfig {
+  minInterval: number;
+  maxInterval: number;
+  maxPosts: number;
+  aiPercentage: number;
+  paymentPercentage: number;
+}

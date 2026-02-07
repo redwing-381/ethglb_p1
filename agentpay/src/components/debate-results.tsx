@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfettiButton } from '@/components/ui/confetti-button';
 import { formatUSDC } from '@/lib/utils';
 import type { DebateTranscript, DebateCostBreakdown, FactCheckResult } from '@/types';
 
@@ -69,6 +70,16 @@ export function DebateResults({ debate, costBreakdown, isLoading, error }: Debat
         <p className="text-xs text-gray-500">Topic: {debate.topic} • {debate.totalRounds} rounds</p>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Celebration */}
+        <div className="flex justify-center">
+          <ConfettiButton
+            className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
+            particleCount={100}
+            spread={90}
+          >
+            🎉 Debate Complete!
+          </ConfettiButton>
+        </div>
         {/* Rounds */}
         {debate.rounds.map((round) => (
           <div key={round.number} className="border border-gray-200 rounded-lg p-3 space-y-2">

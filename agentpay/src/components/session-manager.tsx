@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { GlowingButton } from '@/components/ui/glowing-button';
+import { BorderBeam } from '@/components/ui/border-beam';
 import { Input } from '@/components/ui/input';
 import { SessionState } from '@/types';
 import type { WalletFunctions, CloseChannelWalletFunctions } from '@/types/wallet';
@@ -396,12 +398,13 @@ export function SessionManager({
                       className="flex-1"
                       disabled={isLoading}
                     />
-                    <Button 
+                    <GlowingButton 
                       onClick={handleCreateSession}
                       disabled={!canCreateSession || !budgetInput}
+                      glowColor="#10B981"
                     >
-                      {isLoading ? 'Creating...' : 'Start Session'}
-                    </Button>
+                      {isLoading ? 'Creating...' : '⚡ Start Session'}
+                    </GlowingButton>
                   </div>
                   <p className="text-xs text-gray-500">
                     Uses Yellow Network&apos;s unified balance for instant, gasless transfers
@@ -413,7 +416,10 @@ export function SessionManager({
           // Active session display
           <div className="space-y-4">
             {/* Balance display */}
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="relative p-4 bg-gray-50 rounded-lg overflow-hidden">
+              {isActive && (
+                <BorderBeam lightColor="#10B981" lightWidth={200} duration={6} borderWidth={1} />
+              )}
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Session Balance</span>
                 <span className="text-lg font-semibold">

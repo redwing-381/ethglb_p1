@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { BorderBeam } from '@/components/ui/border-beam';
 import { DEBATE_AGENT_CONFIGS } from '@/lib/ai';
 import type { DebateAgentType } from '@/types';
 
@@ -17,7 +18,8 @@ export function DebateProgress({ currentRound, totalRounds, activeAgent, isActiv
   const config = activeAgent ? DEBATE_AGENT_CONFIGS[activeAgent] : null;
 
   return (
-    <Card className="border-blue-200 bg-blue-50">
+    <Card className="relative border-blue-200 bg-blue-50 overflow-hidden">
+      <BorderBeam lightColor="#3B82F6" lightWidth={300} duration={3} borderWidth={2} />
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
